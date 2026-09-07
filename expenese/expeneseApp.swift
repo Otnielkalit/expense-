@@ -7,9 +7,11 @@
 
 import SwiftData
 import SwiftUI
+import AppIntents
 
 @main
 struct expeneseApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     let container: ModelContainer
 
     init() {
@@ -21,6 +23,8 @@ struct expeneseApp: App {
             )
         )
         AppDependencies.shared.container = container
+        
+        ExpeneseShortcuts.updateAppShortcutParameters()
     }
 
     var body: some Scene {
@@ -31,7 +35,6 @@ struct expeneseApp: App {
     }
 }
 
-/// Tempat nyimpan dependency yang di-share ke seluruh app & App Intent.
 final class AppDependencies {
     static let shared = AppDependencies()
     var container: ModelContainer?

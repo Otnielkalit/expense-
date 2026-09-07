@@ -13,8 +13,12 @@ struct ExpeneseShortcuts: AppShortcutsProvider {
         AppShortcut(
             intent: AddExpenseIntent(),
             phrases: [
-                "Add expense on \(.applicationName)"
-            ]
+                "Add expense in \(.applicationName)",
+                "Log expense with \(.applicationName)",
+                "Add a new expense on \(.applicationName)"
+            ],
+            shortTitle: "Add Expense",
+            systemImageName: "plus.circle"
         )
     }
 }

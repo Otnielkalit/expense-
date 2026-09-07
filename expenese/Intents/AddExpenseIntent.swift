@@ -10,17 +10,13 @@ import SwiftUI
 
 struct AddExpenseIntent: AppIntent {
     static var title: LocalizedStringResource = "Add Expense"
+    static var openAppWhenRun: Bool = true
 
-    /// Siri menangkap seluruh kalimat user di sini.
     @Parameter(title: "What did you spend on?")
     var speech: String
 
-    func perform() async throws -> some IntentResult & ProvidesDialog {
-        // Parse teks
+    func perform() async throws -> some IntentResult {
         let parsed = NLPParser.parse(speech)
-
-        // JANGAN simpan langsung. Buka app dengan data draft yang bisa dikoreksi.
-        // Encode data agar aman untuk URL.
         guard let url = VoiceDraftURL.make(
             amount: parsed.amount,
             category: parsed.category,
@@ -28,14 +24,12 @@ struct AddExpenseIntent: AppIntent {
             paymentType: parsed.paymentType.rawValue,
             desc: parsed.description
         ) else {
-            return .result(dialog: "Sorry, I couldn't process that.")
+            throw NSError(domain: "AddExpenseIntent", code: 1, userInfo: [NSLocalizedDescriptionKey: "Sorry, I couldn't process that."])
         }
 
-        // Buka app lewat custom URL scheme.
+        // Karena `openAppWhenRun = true`, app sudah dipanggil ke foreground.
+        // Buka URL scheme dari dalam proses aplikasi.
         await AppEnvironment.open(url)
-
-        return .result(
-            dialog: "Opened the app to review your expense."
-        )
+        return .result()
     }
 }

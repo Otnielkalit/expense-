@@ -65,7 +65,8 @@ enum VoiceDraftURL {
 }
 
 /// Representasi data yang sedang menunggu dikoreksi user.
-struct Draft {
+struct Draft: Identifiable {
+    let id = UUID()
     var amount: Double
     var category: String
     var paymentMethod: String
@@ -77,7 +78,16 @@ struct Draft {
 enum AppEnvironment {
     static func open(_ url: URL) async {
         await MainActor.run {
-            UIApplication.shared.open(url)
+            // Karena dipanggil dari dalam proses app yang sama, kirim notifikasi agar ditangkap ContentView
+            NotificationCenter.default.post(
+                name: Notification.Name("ExpeneseDidOpenURL"),
+                object: nil,
+                userInfo: ["url": url]
+            )
+            
+            UIApplication.shared.open(url, options: [:]) { success in
+                print("📂 AppEnvironment.open success: \(success) — \(url.absoluteString)")
+            }
         }
     }
 }
