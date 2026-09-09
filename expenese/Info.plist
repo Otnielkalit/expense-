@@ -42,6 +42,8 @@
 	<true/>
 	<key>NSSiriUsageDescription</key>
 	<string>Expense uses Siri to help you log your expenses quickly with your voice.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Expense needs microphone access to animate the voice input graphic while you speak.</string>
 	<key>UILaunchScreen</key>
 	<dict/>
 	<key>UISupportedInterfaceOrientations</key>
