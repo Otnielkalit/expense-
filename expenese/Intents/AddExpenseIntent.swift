@@ -27,8 +27,6 @@ struct AddExpenseIntent: AppIntent {
             throw NSError(domain: "AddExpenseIntent", code: 1, userInfo: [NSLocalizedDescriptionKey: "Sorry, I couldn't process that."])
         }
 
-        // Karena `openAppWhenRun = true`, app sudah dipanggil ke foreground.
-        // Buka URL scheme dari dalam proses aplikasi.
         await AppEnvironment.open(url)
         return .result()
     }

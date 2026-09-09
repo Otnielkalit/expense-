@@ -8,7 +8,6 @@
 import SwiftUI
 import SwiftData
 
-/// Form preview hasil voice yang bisa dikoreksi sebelum disimpan.
 struct EditExpenseView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var context
@@ -33,29 +32,72 @@ struct EditExpenseView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("Detail") {
-                    TextField("Amount", text: $amountText)
-                        .keyboardType(.numberPad)
-                    TextField("Category", text: $category)
-                    TextField("Payment Method", text: $paymentMethod)
+                Section {
+                    HStack(spacing: 16) {
+                        Image(systemName: "dollarsign.circle.fill")
+                            .resizable()
+                            .frame(width: 40, height: 40)
+                            .foregroundColor(.green)
+                        
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Amount")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                            TextField("0", text: $amountText)
+                                .keyboardType(.numberPad)
+                                .font(.system(size: 32, weight: .bold, design: .rounded))
+                        }
+                    }
+                    .padding(.vertical, 8)
                 }
 
-                Section("Payment Type") {
-                    Picker("Type", selection: $paymentType) {
+                Section(header: Text("Transaction Details")) {
+                    HStack {
+                        Image(systemName: "tag.fill")
+                            .foregroundColor(.blue)
+                            .frame(width: 28)
+                        Text("Category")
+                        Spacer()
+                        TextField("Category", text: $category)
+                            .multilineTextAlignment(.trailing)
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    HStack {
+                        Image(systemName: "creditcard.fill")
+                            .foregroundColor(.orange)
+                            .frame(width: 28)
+                        Text("Payment")
+                        Spacer()
+                        TextField("Payment Method", text: $paymentMethod)
+                            .multilineTextAlignment(.trailing)
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    Picker(selection: $paymentType) {
                         ForEach(PaymentType.allCases, id: \.self) { type in
-                            Text(type.rawValue).tag(type)
+                            Text(type.rawValue.capitalized).tag(type)
+                        }
+                    } label: {
+                        HStack {
+                            Image(systemName: "arrow.left.arrow.right")
+                                .foregroundColor(.purple)
+                                .frame(width: 28)
+                            Text("Type")
                         }
                     }
                 }
 
-                Section("Full Text") {
-                    TextField("Description", text: $desc, axis: .vertical)
-                        .lineLimit(3...5)
-                }
-
-                Section {
-                    Button("Save Expense") {
-                        save()
+                Section(header: Text("Notes")) {
+                    HStack(alignment: .top) {
+                        Image(systemName: "note.text")
+                            .foregroundColor(.gray)
+                            .frame(width: 28)
+                            .padding(.top, 7)
+                        
+                        TextField("Add a description...", text: $desc, axis: .vertical)
+                            .lineLimit(3...5)
+                            .padding(.vertical, 4)
                     }
                 }
             }
@@ -63,7 +105,15 @@ struct EditExpenseView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") {
+                        save()
+                    }
+                    .fontWeight(.bold)
                 }
             }
         }

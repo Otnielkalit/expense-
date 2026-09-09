@@ -8,12 +8,10 @@
 import Foundation
 import UIKit
 
-/// Membuat URL scheme untuk membawa data draft hasil parse dari Siri ke app.
 enum VoiceDraftURL {
     private static let scheme = "expenese"
     private static let host = "editExpense"
 
-    /// Encode data expense menjadi URL: expenese://editExpense?amount=..&category=..&payment=..&type=..&desc=..
     static func make(
         amount: Double,
         category: String,
@@ -36,7 +34,6 @@ enum VoiceDraftURL {
         return components.url
     }
 
-    /// Decode data dari URL menjadi draft expense yang siap dikoreksi.
     static func decode(from url: URL) -> Draft? {
         guard url.scheme == scheme, url.host == host,
               let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
@@ -64,7 +61,6 @@ enum VoiceDraftURL {
     }
 }
 
-/// Representasi data yang sedang menunggu dikoreksi user.
 struct Draft: Identifiable {
     let id = UUID()
     var amount: Double
@@ -74,11 +70,9 @@ struct Draft: Identifiable {
     var desc: String
 }
 
-/// Helper kecil untuk membuka URL biar gampang di-test/dimock.
 enum AppEnvironment {
     static func open(_ url: URL) async {
         await MainActor.run {
-            // Karena dipanggil dari dalam proses app yang sama, kirim notifikasi agar ditangkap ContentView
             NotificationCenter.default.post(
                 name: Notification.Name("ExpeneseDidOpenURL"),
                 object: nil,

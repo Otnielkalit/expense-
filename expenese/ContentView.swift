@@ -48,8 +48,6 @@ struct ContentView: View {
             return
         }
         print("✅ Decoded draft: \(incomingDraft)")
-        // Memberikan sedikit jeda agar transisi window selesai.
-        // Menunda assign 'draft' untuk mencegah SwiftUI menampilkan sheet saat app belum siap (layar hitam).
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
             draft = incomingDraft
         }
