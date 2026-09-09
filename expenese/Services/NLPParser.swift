@@ -17,24 +17,65 @@ enum NLPParser {
         var date: Date = .now
     }
     
-    static func parse(_ rawText: String) -> ParsedExpense {
+    static func parse(_ rawText: String) -> [ParsedExpense] {
         let text = rawText.trimmingCharacters(in: .whitespacesAndNewlines)
         
-        let (amount, _) = AmountParser.parse(from: text)
+        // Split by punctuation and Indonesian/English conjunctions/pronouns
+        let pattern = "(?i)(,(?!\\d)|\\.(?!\\d)|\\baku\\b|\\bsaya\\b|\\bterus\\b|\\bkemudian\\b|\\blalu\\b|\\bdan\\b|\\band\\b)"
         
-        let payment = PaymentMapper.match(in: text)
+        let splitText = text.replacingOccurrences(of: pattern, with: "|", options: .regularExpression)
+        let rawChunks = splitText.components(separatedBy: "|")
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+            
+        var expenses: [ParsedExpense] = []
+        var lastDate: Date = .now
+        var chunkBuffer = ""
         
-        let category = CategoryMapper.match(in: text)
+        for chunk in rawChunks {
+            // Accumulate text until we find a number (amount)
+            let combinedText = chunkBuffer.isEmpty ? chunk : "\(chunkBuffer) \(chunk)"
+            let (amount, _) = AmountParser.parse(from: combinedText)
+            
+            if amount == 0 {
+                // Buffer it and wait for the next chunk which hopefully has an amount
+                chunkBuffer = combinedText
+                continue
+            }
+            
+            // Found a valid amount! Parse this combined chunk
+            let payment = PaymentMapper.match(in: combinedText)
+            let category = CategoryMapper.match(in: combinedText)
+            let date = DateParser.parse(from: combinedText) ?? lastDate
+            lastDate = date // Inherit for subsequent chunks
+            
+            let description = combinedText.isEmpty ? "" : "\(combinedText) | Rp\(Int(amount).formatted())"
+            
+            expenses.append(ParsedExpense(
+                amount: amount,
+                category: category,
+                paymentMethod: payment?.method ?? "Cash",
+                paymentType: payment?.type ?? .cash,
+                description: description,
+                date: date
+            ))
+            
+            // Clear buffer
+            chunkBuffer = ""
+        }
         
-        let description = "\(text) | Rp\(Int(amount).formatted())"
+        // Fallback if everything was filtered out
+        if expenses.isEmpty {
+            expenses.append(ParsedExpense(
+                amount: AmountParser.parse(from: text).amount,
+                category: CategoryMapper.match(in: text),
+                paymentMethod: PaymentMapper.match(in: text)?.method ?? "Cash",
+                paymentType: PaymentMapper.match(in: text)?.type ?? .cash,
+                description: text,
+                date: DateParser.parse(from: text) ?? .now
+            ))
+        }
         
-        return ParsedExpense(
-            amount: amount,
-            category: category,
-            paymentMethod: payment?.method ?? "Cash",
-            paymentType: payment?.type ?? .cash,
-            description: description,
-            date: .now
-        )
+        return expenses
     }
 }

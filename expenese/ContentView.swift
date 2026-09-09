@@ -11,7 +11,7 @@ import SwiftData
 let expeneseDidOpenURL = Notification.Name("ExpeneseDidOpenURL")
 
 struct ContentView: View {
-    @State private var draft: Draft?
+    @State private var draftPayload: DraftPayload?
     @State private var selectedTab = 0
 
     var body: some View {
@@ -36,20 +36,20 @@ struct ContentView: View {
                 handle(url)
             }
         }
-        .sheet(item: $draft) { currentDraft in
-            EditExpenseView(draft: currentDraft)
+        .sheet(item: $draftPayload) { payload in
+            EditExpenseView(drafts: payload.items)
         }
     }
 
     private func handle(_ url: URL) {
         print("📂 URL received: \(url.absoluteString)")
-        guard let incomingDraft = VoiceDraftURL.decode(from: url) else {
-            print("❌ Failed to decode URL: \(url.absoluteString)")
+        guard let incomingDrafts = VoiceDraftURL.decode(from: url), !incomingDrafts.isEmpty else {
+            print("❌ Failed to decode URL or array is empty: \(url.absoluteString)")
             return
         }
-        print("✅ Decoded draft: \(incomingDraft)")
+        print("✅ Decoded \(incomingDrafts.count) drafts")
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-            draft = incomingDraft
+            draftPayload = DraftPayload(items: incomingDrafts)
         }
     }
 }

@@ -8,12 +8,13 @@
 import Foundation
 
 enum AmountParser {
-    private static let numberPattern = #"(\d[\d.,]*)"#
+    private static let numberPattern = #"(\d[\d.,]*)\s*(thousand|k|ribu|million|m|juta)?"#
 
     private static let regex = try! NSRegularExpression(
         pattern: numberPattern,
-        options: []
+        options: .caseInsensitive
     )
+    
     static func parse(from text: String) -> (amount: Double, cleaned: String) {
         let nsRange = NSRange(text.startIndex..., in: text)
         guard let match = regex.firstMatch(in: text, options: [], range: nsRange),
@@ -23,7 +24,18 @@ enum AmountParser {
         }
 
         let numberString = String(text[range])
-        let number = normalize(numberString)
+        var number = normalize(numberString)
+        
+        if match.numberOfRanges > 2, match.range(at: 2).location != NSNotFound,
+           let multRange = Range(match.range(at: 2), in: text) {
+            let multString = String(text[multRange]).lowercased()
+            if ["thousand", "k", "ribu"].contains(multString) {
+                number *= 1000
+            } else if ["million", "m", "juta"].contains(multString) {
+                number *= 1000000
+            }
+        }
+        
         var cleaned = text
         if let replaceRange = Range(match.range(at: 0), in: text) {
             cleaned.removeSubrange(replaceRange)

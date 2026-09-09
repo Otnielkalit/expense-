@@ -1,10 +1,3 @@
-//
-//  EditExpenseView.swift
-//  expenese
-//
-//  Created by otnielkalit on 02/09/26.
-//
-
 import SwiftUI
 import SwiftData
 
@@ -12,96 +5,24 @@ struct EditExpenseView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var context
 
-    let draft: Draft
+    @State private var drafts: [Draft]
 
-    @State private var amountText: String
-    @State private var category: String
-    @State private var paymentMethod: String
-    @State private var paymentType: PaymentType
-    @State private var desc: String
-
-    init(draft: Draft) {
-        self.draft = draft
-        _amountText = State(initialValue: String(Int(draft.amount)))
-        _category = State(initialValue: draft.category)
-        _paymentMethod = State(initialValue: draft.paymentMethod)
-        _paymentType = State(initialValue: draft.paymentType)
-        _desc = State(initialValue: draft.desc)
+    init(drafts: [Draft]) {
+        _drafts = State(initialValue: drafts)
     }
 
     var body: some View {
         NavigationStack {
             Form {
-                Section {
-                    HStack(spacing: 16) {
-                        Image(systemName: "dollarsign.circle.fill")
-                            .resizable()
-                            .frame(width: 40, height: 40)
-                            .foregroundColor(.green)
-                        
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Amount")
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                            TextField("0", text: $amountText)
-                                .keyboardType(.numberPad)
-                                .font(.system(size: 32, weight: .bold, design: .rounded))
-                        }
-                    }
-                    .padding(.vertical, 8)
-                }
-
-                Section(header: Text("Transaction Details")) {
-                    HStack {
-                        Image(systemName: "tag.fill")
-                            .foregroundColor(.blue)
-                            .frame(width: 28)
-                        Text("Category")
-                        Spacer()
-                        TextField("Category", text: $category)
-                            .multilineTextAlignment(.trailing)
-                            .foregroundColor(.secondary)
-                    }
-                    
-                    HStack {
-                        Image(systemName: "creditcard.fill")
-                            .foregroundColor(.orange)
-                            .frame(width: 28)
-                        Text("Payment")
-                        Spacer()
-                        TextField("Payment Method", text: $paymentMethod)
-                            .multilineTextAlignment(.trailing)
-                            .foregroundColor(.secondary)
-                    }
-                    
-                    Picker(selection: $paymentType) {
-                        ForEach(PaymentType.allCases, id: \.self) { type in
-                            Text(type.rawValue.capitalized).tag(type)
-                        }
-                    } label: {
-                        HStack {
-                            Image(systemName: "arrow.left.arrow.right")
-                                .foregroundColor(.purple)
-                                .frame(width: 28)
-                            Text("Type")
-                        }
-                    }
-                }
-
-                Section(header: Text("Notes")) {
-                    HStack(alignment: .top) {
-                        Image(systemName: "note.text")
-                            .foregroundColor(.gray)
-                            .frame(width: 28)
-                            .padding(.top, 7)
-                        
-                        TextField("Add a description...", text: $desc, axis: .vertical)
-                            .lineLimit(3...5)
-                            .padding(.vertical, 4)
+                if drafts.isEmpty {
+                    Text("No expenses found.")
+                } else {
+                    ForEach(Array($drafts.enumerated()), id: \.element.id) { index, $draft in
+                        DraftEditorView(index: index + 1, draft: $draft)
                     }
                 }
             }
-            .navigationTitle("Review Expense")
+            .navigationTitle("Review Expenses")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -110,8 +31,8 @@ struct EditExpenseView: View {
                     }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") {
-                        save()
+                    Button("Save All") {
+                        saveAll()
                     }
                     .fontWeight(.bold)
                 }
@@ -119,16 +40,99 @@ struct EditExpenseView: View {
         }
     }
 
-    private func save() {
-        let expense = Expense(
-            amount: Double(amountText) ?? 0,
-            category: category,
-            paymentMethod: paymentMethod,
-            paymentType: paymentType,
-            desc: desc
-        )
-        context.insert(expense)
+    private func saveAll() {
+        for draft in drafts {
+            let expense = Expense(
+                amount: draft.amount,
+                category: draft.category,
+                paymentMethod: draft.paymentMethod,
+                paymentType: draft.paymentType,
+                desc: draft.desc,
+                date: draft.date
+            )
+            context.insert(expense)
+        }
         try? context.save()
         dismiss()
+    }
+}
+
+struct DraftEditorView: View {
+    let index: Int
+    @Binding var draft: Draft
+    @State private var amountText: String
+    
+    init(index: Int, draft: Binding<Draft>) {
+        self.index = index
+        self._draft = draft
+        self._amountText = State(initialValue: String(Int(draft.wrappedValue.amount)))
+    }
+    
+    var body: some View {
+        Section(header: Text("Transaction \(index)")) {
+            DatePicker("Date", selection: $draft.date, displayedComponents: .date)
+            
+            HStack(spacing: 16) {
+                Image(systemName: "dollarsign.circle.fill")
+                    .foregroundColor(.green)
+                    .frame(width: 28)
+                
+                Text("Amount")
+                Spacer()
+                TextField("0", text: $amountText)
+                    .keyboardType(.numberPad)
+                    .multilineTextAlignment(.trailing)
+                    .font(.system(size: 20, weight: .bold, design: .rounded))
+                    .onChange(of: amountText) { newValue in
+                        draft.amount = Double(newValue) ?? 0
+                    }
+            }
+            
+            HStack {
+                Image(systemName: "tag.fill")
+                    .foregroundColor(.blue)
+                    .frame(width: 28)
+                Text("Category")
+                Spacer()
+                TextField("Category", text: $draft.category)
+                    .multilineTextAlignment(.trailing)
+                    .foregroundColor(.secondary)
+            }
+            
+            HStack {
+                Image(systemName: "creditcard.fill")
+                    .foregroundColor(.orange)
+                    .frame(width: 28)
+                Text("Payment")
+                Spacer()
+                TextField("Payment Method", text: $draft.paymentMethod)
+                    .multilineTextAlignment(.trailing)
+                    .foregroundColor(.secondary)
+            }
+            
+            Picker(selection: $draft.paymentType) {
+                ForEach(PaymentType.allCases, id: \.self) { type in
+                    Text(type.rawValue.capitalized).tag(type)
+                }
+            } label: {
+                HStack {
+                    Image(systemName: "arrow.left.arrow.right")
+                        .foregroundColor(.purple)
+                        .frame(width: 28)
+                    Text("Type")
+                }
+            }
+            
+            HStack(alignment: .top) {
+                Image(systemName: "note.text")
+                    .foregroundColor(.gray)
+                    .frame(width: 28)
+                    .padding(.top, 7)
+                
+                TextField("Add a description...", text: $draft.desc, axis: .vertical)
+                    .lineLimit(2...4)
+                    .padding(.vertical, 4)
+            }
+        }
     }
 }

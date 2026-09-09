@@ -16,14 +16,19 @@ struct AddExpenseIntent: AppIntent {
     var speech: String
 
     func perform() async throws -> some IntentResult {
-        let parsed = NLPParser.parse(speech)
-        guard let url = VoiceDraftURL.make(
-            amount: parsed.amount,
-            category: parsed.category,
-            paymentMethod: parsed.paymentMethod,
-            paymentType: parsed.paymentType.rawValue,
-            desc: parsed.description
-        ) else {
+        let parsedList = NLPParser.parse(speech)
+        let drafts = parsedList.map { parsed in
+            Draft(
+                amount: parsed.amount,
+                category: parsed.category,
+                paymentMethod: parsed.paymentMethod,
+                paymentType: parsed.paymentType,
+                desc: parsed.description,
+                date: parsed.date
+            )
+        }
+        
+        guard let url = VoiceDraftURL.make(drafts: drafts) else {
             throw NSError(domain: "AddExpenseIntent", code: 1, userInfo: [NSLocalizedDescriptionKey: "Sorry, I couldn't process that."])
         }
 
