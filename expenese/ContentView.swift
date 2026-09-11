@@ -30,9 +30,7 @@ struct ContentView: View {
                         Label("Input", systemImage: "plus")
                     }
                     .tag(1)
-                Text("Report View")
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(Theme.bgBottom)
+                ReportView()
                     .tabItem {
                         Label("Report", systemImage: "chart.pie.fill")
                     }
