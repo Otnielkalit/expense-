@@ -20,7 +20,7 @@ struct AddExpenseManualView: View {
     
     var body: some View {
         ZStack {
-            Theme.bgApp.ignoresSafeArea()
+            Color(.systemGroupedBackground).ignoresSafeArea()
             
             VStack(spacing: 0) {
                 customHeader
@@ -35,17 +35,17 @@ struct AddExpenseManualView: View {
                             Button(action: { showDatePicker = true }) {
                                 Text("**Today**, 02 April 2026")
                                     .font(.system(size: 16))
-                                    .foregroundColor(Theme.textDark)
+                                    .foregroundColor(.primary)
                             }
                             
                             HStack(alignment: .center, spacing: 4) {
                                 Text("Rp")
                                     .font(.system(size: 48, weight: .bold))
-                                    .foregroundColor(Theme.textDark)
+                                    .foregroundColor(.primary)
                             
                                 TextField("0", text: $amountText)
                                     .font(.system(size: 48, weight: .bold))
-                                    .foregroundColor(Theme.textDark)
+                                    .foregroundColor(.primary)
                                     .keyboardType(.numberPad)
                                     .onChange(of: amountText) { oldValue, newValue in
                                         let filtered = newValue.filter { "0123456789".contains($0) }
@@ -88,8 +88,8 @@ struct AddExpenseManualView: View {
                                 TextField("Expense details...", text: $descriptionText, axis: .vertical)
                                     .lineLimit(3...5)
                                     .padding(16)
-                                    .background(Color.gray.opacity(0.2))
-                                    .foregroundColor(Theme.textDark)
+                                    .background(Color(.tertiarySystemGroupedBackground))
+                                    .foregroundColor(.primary)
                                     .cornerRadius(12)
                             }
                             
@@ -108,13 +108,13 @@ struct AddExpenseManualView: View {
                                     Button(action: {}) {
                                         Image(systemName: "circle.grid.3x3.fill")
                                             .font(.system(size: 24))
-                                            .foregroundColor(Theme.textDark)
+                                            .foregroundColor(.primary)
                                             .frame(width: 50, height: 50)
-                                            .background(Color.white)
+                                            .background(Color(.secondarySystemGroupedBackground))
                                             .cornerRadius(12)
                                             .overlay(
                                                 RoundedRectangle(cornerRadius: 12)
-                                                    .stroke(Theme.textDark, lineWidth: 2)
+                                                    .stroke(Color.primary, lineWidth: 2)
                                             )
                                     }
                                 }
@@ -122,7 +122,7 @@ struct AddExpenseManualView: View {
                             
                         }
                         .padding(24)
-                        .background(Color.white)
+                        .background(Color(.secondarySystemGroupedBackground))
                         .cornerRadius(24)
                         .padding(.horizontal, 16)
                         .zIndex(1) // Ensure it stays above other elements for dropdown
@@ -179,7 +179,7 @@ struct AddExpenseManualView: View {
                 .foregroundColor(isExpense ? Theme.expenseRed : Theme.incomePurple)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 8)
-                .background(Color.white)
+                .background(Color(.secondarySystemGroupedBackground))
                 .clipShape(Capsule())
                 .overlay(
                     Capsule().stroke(isExpense ? Theme.expenseRed.opacity(0.2) : Theme.incomePurple.opacity(0.2), lineWidth: 1)
@@ -197,16 +197,16 @@ struct AddExpenseManualView: View {
                 .foregroundColor(.white)
             
             Text(text)
-                .foregroundColor(Theme.textDark)
+                .foregroundColor(.primary)
                 .padding(.leading, 8)
             
             Spacer()
             
             Image(systemName: "chevron.down")
-                .foregroundColor(Theme.textDark)
+                .foregroundColor(.primary)
         }
         .padding(12)
-        .background(Color.gray.opacity(0.1))
+        .background(Color(.tertiarySystemGroupedBackground))
         .cornerRadius(30)
     }
     

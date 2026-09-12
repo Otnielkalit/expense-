@@ -19,7 +19,7 @@ struct AddCategoryView: View {
     var body: some View {
         NavigationView {
             ZStack {
-                Theme.bgApp.ignoresSafeArea()
+                Color(.systemGroupedBackground).ignoresSafeArea()
                 
                 VStack(spacing: 24) {
                     
@@ -44,11 +44,11 @@ struct AddCategoryView: View {
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Name")
                                 .font(.system(size: 14, weight: .semibold))
-                                .foregroundColor(Theme.textDark)
+                                .foregroundColor(.primary)
                             
                             TextField("Enter category name", text: $categoryName)
                                 .padding(16)
-                                .background(Color.white)
+                                .background(Color(.secondarySystemGroupedBackground))
                                 .cornerRadius(12)
                         }
                         
@@ -56,7 +56,7 @@ struct AddCategoryView: View {
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Icon")
                                 .font(.system(size: 14, weight: .semibold))
-                                .foregroundColor(Theme.textDark)
+                                .foregroundColor(.primary)
                             
                             ScrollView(.horizontal, showsIndicators: false) {
                                 HStack(spacing: 16) {
@@ -66,7 +66,7 @@ struct AddCategoryView: View {
                                                 .font(.system(size: 24))
                                                 .foregroundColor(selectedIcon == icon ? .white : .gray)
                                                 .frame(width: 50, height: 50)
-                                                .background(selectedIcon == icon ? selectedColor : Color.white)
+                                                .background(selectedIcon == icon ? selectedColor : Color(.secondarySystemGroupedBackground))
                                                 .clipShape(Circle())
                                         }
                                     }
@@ -79,7 +79,7 @@ struct AddCategoryView: View {
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Color")
                                 .font(.system(size: 14, weight: .semibold))
-                                .foregroundColor(Theme.textDark)
+                                .foregroundColor(.primary)
                             
                             ScrollView(.horizontal, showsIndicators: false) {
                                 HStack(spacing: 16) {
