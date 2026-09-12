@@ -74,8 +74,17 @@ enum CategoryMapper {
         ("education", "Education")
     ]
 
-    static func match(in text: String) -> String {
+    static func match(in text: String, customCategories: [String] = []) -> String {
         let lower = text.lowercased()
+        
+        // 1. Check custom categories first
+        for cat in customCategories {
+            if lower.contains(cat.lowercased()) {
+                return cat
+            }
+        }
+        
+        // 2. Fallback to hardcoded keyword map
         for item in keyword {
             if lower.contains(item.keyword) {
                 return item.category

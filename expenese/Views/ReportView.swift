@@ -6,30 +6,35 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct ReportView: View {
+    @Query private var expenses: [Expense]
+    @Query private var customCategories: [ExpenseCategory]
+    
     @State private var period: ReportPeriod = .weekly
-    @State private var selectedDate: Date = ReportDummyData.defaultDate
+    @State private var selectedDate: Date = ReportHelper.defaultDate
 
-    private var filteredExpenses: [ReportDummyExpense] {
-        ReportDummyData.expenses(for: selectedDate, period: period)
+    private var filteredExpenses: [Expense] {
+        ReportHelper.filteredExpenses(from: expenses, for: selectedDate, period: period)
     }
 
     private var displayedCategories: [ReportCategoryItem] {
-        ReportDummyData.categories(from: filteredExpenses)
+        ReportHelper.categories(from: filteredExpenses, customCategories: customCategories)
     }
 
     var body: some View {
         NavigationStack {
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 22) {
+                    header
                     periodPicker
 
                     Text("Expenses Report")
                         .font(.system(size: 18, weight: .medium))
                         .foregroundColor(.black)
 
-                    ReportDateFilter(period: period, selectedDate: $selectedDate)
+                    ReportDateFilter(period: period, selectedDate: $selectedDate, allExpenses: expenses)
 
                     if displayedCategories.isEmpty {
                         emptyState
@@ -49,11 +54,9 @@ struct ReportView: View {
                 .padding(.top, 8)
             }
             .background(Color.white)
-            .navigationTitle("Report")
-            .navigationBarTitleDisplayMode(.automatic)
-            .toolbarBackground(.visible, for: .navigationBar)
+            .toolbar(.hidden, for: .navigationBar)
             .onChange(of: period) { _, newPeriod in
-                selectedDate = ReportDummyData.nearestAvailableDate(to: selectedDate, period: newPeriod)
+                selectedDate = ReportHelper.nearestAvailableDate(to: selectedDate, period: newPeriod, allExpenses: expenses)
             }
         }
     }
@@ -145,55 +148,79 @@ private extension ReportView {
 private struct ReportDateFilter: View {
     let period: ReportPeriod
     @Binding var selectedDate: Date
+    let allExpenses: [Expense]
 
     var body: some View {
-        Menu {
-            switch period {
-            case .weekly:
-                ForEach(ReportDummyData.weeks(inMonthOf: selectedDate)) { week in
-                    Button {
-                        selectedDate = week.start
-                    } label: {
-                        dateMenuLabel(
-                            week.label,
-                            isSelected: ReportDummyData.isDate(selectedDate, in: week)
-                        )
+        HStack(spacing: 8) {
+            stepButton(offset: -1, icon: "chevron.left")
+
+            Menu {
+                switch period {
+                case .weekly:
+                    ForEach(ReportHelper.weeks(inMonthOf: selectedDate)) { week in
+                        Button {
+                            selectedDate = week.start
+                        } label: {
+                            dateMenuLabel(
+                                week.label,
+                                isSelected: ReportHelper.isDate(selectedDate, in: week)
+                            )
+                        }
+                    }
+                case .monthly:
+                    ForEach(ReportHelper.availableMonths(from: allExpenses), id: \.self) { month in
+                        Button {
+                            selectedDate = month
+                        } label: {
+                            dateMenuLabel(ReportFormat.month(month), isSelected: isSameMonth(month))
+                        }
                     }
                 }
-            case .monthly:
-                ForEach(ReportDummyData.availableMonths, id: \.self) { month in
-                    Button {
-                        selectedDate = month
-                    } label: {
-                        dateMenuLabel(ReportFormat.month(month), isSelected: isSameMonth(month))
-                    }
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "calendar")
+                        .font(.system(size: 14, weight: .semibold))
+                    Text(filterLabel)
+                        .font(.system(size: 15, weight: .medium))
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 11, weight: .semibold))
                 }
+                .foregroundColor(.black)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
             }
-        } label: {
-            HStack(spacing: 8) {
-                Image(systemName: "calendar")
-                    .font(.system(size: 14, weight: .semibold))
-                Text(filterLabel)
-                    .font(.system(size: 15, weight: .medium))
-                Spacer()
-                Image(systemName: "chevron.down")
-                    .font(.system(size: 11, weight: .semibold))
-            }
-            .foregroundColor(.black)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-            .background(Color(white: 0.93))
-            .clipShape(Capsule())
+
+            stepButton(offset: 1, icon: "chevron.right")
         }
+        .padding(.horizontal, 8)
+        .background(Color(white: 0.93))
+        .clipShape(Capsule())
     }
 
     private var filterLabel: String {
         switch period {
         case .weekly:
-            return ReportDummyData.week(containing: selectedDate).label
+            return ReportHelper.week(containing: selectedDate).label
         case .monthly:
             return ReportFormat.month(selectedDate)
         }
+    }
+
+    private func stepButton(offset: Int, icon: String) -> some View {
+        let enabled = ReportHelper.canStep(selectedDate, by: offset, period: period, allExpenses: allExpenses)
+        return Button {
+            guard let next = ReportHelper.stepDate(selectedDate, by: offset, period: period, allExpenses: allExpenses) else { return }
+            withAnimation(.easeInOut(duration: 0.2)) {
+                selectedDate = next
+            }
+        } label: {
+            Image(systemName: icon)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundColor(enabled ? .black : .gray.opacity(0.35))
+                .frame(width: 36, height: 36)
+        }
+        .disabled(!enabled)
+        .buttonStyle(.plain)
     }
 
     @ViewBuilder

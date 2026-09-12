@@ -9,7 +9,7 @@ import SwiftUI
 
 struct ReportPieChartView: View {
     let categories: [ReportCategoryItem]
-    let expenses: [ReportDummyExpense]
+    let expenses: [Expense]
 
     @State private var selectedCategory: ReportCategoryItem?
 
@@ -272,10 +272,9 @@ private struct DonutSliceShape: Shape {
 }
 
 #Preview {
-    let expenses = ReportDummyData.expenses(for: ReportDummyData.defaultDate, period: .weekly)
     return ReportPieChartView(
-        categories: ReportDummyData.categories(from: expenses),
-        expenses: expenses
+        categories: [],
+        expenses: []
     )
     .padding()
 }

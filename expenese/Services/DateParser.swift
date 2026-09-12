@@ -10,17 +10,26 @@ enum DateParser {
         if lowerText.contains("hari ini") {
             return today
         }
-        if lowerText.contains("kemarin") {
+        if lowerText.contains("kemarin") || lowerText.contains("semalam") {
             return calendar.date(byAdding: .day, value: -1, to: today)
         }
         if lowerText.contains("besok") {
             return calendar.date(byAdding: .day, value: 1, to: today)
+        }
+        if lowerText.contains("lusa") {
+            return calendar.date(byAdding: .day, value: 2, to: today)
         }
         if lowerText.contains("minggu lalu") {
             return calendar.date(byAdding: .day, value: -7, to: today)
         }
         if lowerText.contains("bulan lalu") {
             return calendar.date(byAdding: .month, value: -1, to: today)
+        }
+        if lowerText.contains("dua hari lalu") || lowerText.contains("2 hari lalu") || lowerText.contains("dua hari yang lalu") {
+            return calendar.date(byAdding: .day, value: -2, to: today)
+        }
+        if lowerText.contains("tiga hari lalu") || lowerText.contains("3 hari lalu") || lowerText.contains("tiga hari yang lalu") {
+            return calendar.date(byAdding: .day, value: -3, to: today)
         }
         
         // Check for "X hari lalu"
