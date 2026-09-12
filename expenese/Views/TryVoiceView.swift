@@ -6,21 +6,37 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct TryVoiceView: View {
+    @Environment(\.modelContext) private var modelContext
+    @Query private var customCategories: [ExpenseCategory]
+    
     @StateObject private var audioManager = AudioLevelManager()
+    @StateObject private var speechRecognizer = SpeechRecognizer()
     @State private var isRecording = false
     @State private var showManual = false
+    @State private var draftPayload: DraftPayload?
     
     var body: some View {
         VStack(spacing: 60) {
             
             Spacer()
             VStack(spacing: 8) {
-                Text("Tell Me **Your**")
-                Text("**Expense** or **Income !**")
+                if isRecording {
+                    Text(speechRecognizer.transcript.isEmpty ? "Listening..." : speechRecognizer.transcript)
+                        .font(.system(size: 24, weight: .medium))
+                        .foregroundColor(.gray)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+                        .frame(height: 80)
+                } else {
+                    Text("Tell Me **Your**")
+                        .font(.system(size: 32))
+                    Text("**Expense** or **Income !**")
+                        .font(.system(size: 32))
+                }
             }
-            .font(.system(size: 32))
             .multilineTextAlignment(.center)
             .foregroundColor(.black)
             Button(action: {
@@ -28,8 +44,11 @@ struct TryVoiceView: View {
                     isRecording.toggle()
                     if isRecording {
                         audioManager.startMonitoring()
+                        speechRecognizer.startTranscribing()
                     } else {
                         audioManager.stopMonitoring()
+                        speechRecognizer.stopTranscribing()
+                        processSpeech(speechRecognizer.transcript)
                     }
                 }
             }) {
@@ -79,11 +98,32 @@ struct TryVoiceView: View {
         .fullScreenCover(isPresented: $showManual) {
             AddExpenseManualView()
         }
-
+        .sheet(item: $draftPayload) { payload in
+            EditExpenseView(drafts: payload.items)
+        }
         .onDisappear {
             audioManager.stopMonitoring()
+            speechRecognizer.stopTranscribing()
             isRecording = false
         }
+    }
+    
+    private func processSpeech(_ text: String) {
+        guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        let categoryNames = customCategories.map { $0.name }
+        let parsedList = NLPParser.parse(text, customCategories: categoryNames)
+        let drafts = parsedList.map { parsed in
+            Draft(
+                amount: parsed.amount,
+                category: parsed.category,
+                paymentMethod: parsed.paymentMethod,
+                paymentType: parsed.paymentType,
+                desc: parsed.description,
+                date: parsed.date,
+                isExpense: parsed.isExpense
+            )
+        }
+        draftPayload = DraftPayload(items: drafts)
     }
 }
 

@@ -36,9 +36,28 @@ struct AddExpenseManualView: View {
                         
                         VStack(spacing: 8) {
                             Button(action: { showDatePicker = true }) {
-                                Text(formatHeaderDate(selectedDate))
-                                    .font(.system(size: 16))
-                                    .foregroundColor(.primary)
+                                HStack(spacing: 6) {
+                                    Image(systemName: "calendar")
+                                        .font(.system(size: 16))
+                                        .foregroundColor(.blue)
+                                    Text(formatHeaderDate(selectedDate))
+                                        .font(.system(size: 16))
+                                        .foregroundColor(.primary)
+                                }
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 8)
+                                .background(Color(.secondarySystemGroupedBackground))
+                                .cornerRadius(12)
+                            }
+                            .sheet(isPresented: $showDatePicker) {
+                                VStack {
+                                    DatePicker("Select Date", selection: $selectedDate, displayedComponents: [.date])
+                                        .datePickerStyle(GraphicalDatePickerStyle())
+                                        .padding()
+                                    Spacer()
+                                }
+                                .presentationDetents([.medium])
+                                .presentationDragIndicator(.visible)
                             }
                             
                             HStack(alignment: .center, spacing: 4) {
@@ -119,8 +138,8 @@ struct AddExpenseManualView: View {
                                         pickerLabel(icon: "dollarsign", iconBg: .green, text: selectedMethod)
                                     }
                                     
-                                    Button(action: {}) {
-                                        Image(systemName: "circle.grid.3x3.fill")
+                                    Button(action: { showDatePicker = true }) {
+                                        Image(systemName: "calendar")
                                             .font(.system(size: 24))
                                             .foregroundColor(.primary)
                                             .frame(width: 50, height: 50)
@@ -179,16 +198,6 @@ struct AddExpenseManualView: View {
             }
         }
         .navigationBarHidden(true)
-        .sheet(isPresented: $showDatePicker) {
-            VStack {
-                DatePicker("Select Date", selection: $selectedDate, displayedComponents: [.date])
-                    .datePickerStyle(GraphicalDatePickerStyle())
-                    .padding()
-                Spacer()
-            }
-            .presentationDetents([.medium])
-            .presentationDragIndicator(.visible)
-        }
         .sheet(isPresented: $showAddCategoryModal) {
             AddCategoryView()
                 .presentationDetents([.large])

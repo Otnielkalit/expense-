@@ -15,9 +15,10 @@ enum NLPParser {
         var paymentType: PaymentType = .cash
         var description: String = ""
         var date: Date = .now
+        var isExpense: Bool = true
     }
     
-    static func parse(_ rawText: String) -> [ParsedExpense] {
+    static func parse(_ rawText: String, customCategories: [String] = []) -> [ParsedExpense] {
         let text = rawText.trimmingCharacters(in: .whitespacesAndNewlines)
         
         let pattern = "(?i)(,(?!\\d)|\\.(?!\\d)|\\baku\\b|\\bsaya\\b|\\bterus\\b|\\bkemudian\\b|\\blalu\\b|\\bdan\\b|\\band\\b)"
@@ -41,7 +42,12 @@ enum NLPParser {
             }
             
             let payment = PaymentMapper.match(in: combinedText)
-            let category = CategoryMapper.match(in: combinedText)
+            
+            let lowerCombined = combinedText.lowercased()
+            let incomeKeywords = ["gaji", "income", "pendapatan", "bonus", "dikasih", "dapat", "pemasukan"]
+            let isIncome = incomeKeywords.contains(where: { lowerCombined.contains($0) })
+            
+            let category = isIncome ? "Income" : CategoryMapper.match(in: combinedText, customCategories: customCategories)
             let date = DateParser.parse(from: combinedText) ?? lastDate
             lastDate = date
             
@@ -53,20 +59,27 @@ enum NLPParser {
                 paymentMethod: payment?.method ?? "Cash",
                 paymentType: payment?.type ?? .cash,
                 description: description,
-                date: date
+                date: date,
+                isExpense: !isIncome
             ))
             
             chunkBuffer = ""
         }
         
         if expenses.isEmpty {
+            let lowerText = text.lowercased()
+            let incomeKeywords = ["gaji", "income", "pendapatan", "bonus", "dikasih", "dapat", "pemasukan"]
+            let isIncome = incomeKeywords.contains(where: { lowerText.contains($0) })
+            let category = isIncome ? "Income" : CategoryMapper.match(in: text, customCategories: customCategories)
+            
             expenses.append(ParsedExpense(
                 amount: AmountParser.parse(from: text).amount,
-                category: CategoryMapper.match(in: text),
+                category: category,
                 paymentMethod: PaymentMapper.match(in: text)?.method ?? "Cash",
                 paymentType: PaymentMapper.match(in: text)?.type ?? .cash,
                 description: text,
-                date: DateParser.parse(from: text) ?? .now
+                date: DateParser.parse(from: text) ?? .now,
+                isExpense: !isIncome
             ))
         }
         

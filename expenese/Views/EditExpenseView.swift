@@ -48,7 +48,8 @@ struct EditExpenseView: View {
                 paymentMethod: draft.paymentMethod,
                 paymentType: draft.paymentType,
                 desc: draft.desc,
-                date: draft.date
+                date: draft.date,
+                isExpense: draft.isExpense
             )
             context.insert(expense)
         }
@@ -70,6 +71,13 @@ struct DraftEditorView: View {
     
     var body: some View {
         Section(header: Text("Transaction \(index)")) {
+            Picker("Transaction Type", selection: $draft.isExpense) {
+                Text("Expense").tag(true)
+                Text("Income").tag(false)
+            }
+            .pickerStyle(.segmented)
+            .padding(.bottom, 8)
+            
             DatePicker("Date", selection: $draft.date, displayedComponents: .date)
             
             HStack(spacing: 16) {

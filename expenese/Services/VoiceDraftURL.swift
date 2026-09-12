@@ -45,6 +45,7 @@ struct Draft: Identifiable, Codable {
     var paymentType: PaymentType
     var desc: String
     var date: Date
+    var isExpense: Bool
 }
 
 struct DraftPayload: Identifiable {
