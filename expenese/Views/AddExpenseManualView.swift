@@ -16,6 +16,7 @@ struct AddExpenseManualView: View {
     @State private var isExpense: Bool = true
     @State private var showDatePicker = false
     @State private var selectedDate = Date()
+    @State private var showAddCategoryModal = false
     
     var body: some View {
         ZStack {
@@ -62,10 +63,21 @@ struct AddExpenseManualView: View {
                                     .font(.system(size: 16, weight: .bold))
                                 
                                 Menu {
-                                    Button("Food & Beverage", action: { selectedCategory = "Food & Beverage" })
-                                    Button("Transport", action: { selectedCategory = "Transport" })
+                                    Button(action: { selectedCategory = "Food & Beverage" }) {
+                                        Label("Food & Beverage", systemImage: "fork.knife")
+                                    }
+                                    Button(action: { selectedCategory = "Transportation" }) {
+                                        Label("Transportation", systemImage: "car.fill")
+                                    }
+                                    Button(action: { selectedCategory = "Utilities" }) {
+                                        Label("Utilities", systemImage: "house.fill")
+                                    }
+                                    Divider()
+                                    Button(action: { showAddCategoryModal = true }) {
+                                        Label("Add Category", systemImage: "plus")
+                                    }
                                 } label: {
-                                    pickerLabel(icon: "fork.knife", iconBg: .yellow, text: selectedCategory)
+                                    pickerLabel(icon: getCategoryIcon(selectedCategory), iconBg: getCategoryColor(selectedCategory), text: selectedCategory)
                                 }
                             }
                        
@@ -113,6 +125,7 @@ struct AddExpenseManualView: View {
                         .background(Color.white)
                         .cornerRadius(24)
                         .padding(.horizontal, 16)
+                        .zIndex(1) // Ensure it stays above other elements for dropdown
                     }
                 }
             }
@@ -127,6 +140,11 @@ struct AddExpenseManualView: View {
             }
             .presentationDetents([.medium])
             .presentationDragIndicator(.visible)
+        }
+        .sheet(isPresented: $showAddCategoryModal) {
+            AddCategoryView()
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
         }
     }
     
@@ -188,7 +206,26 @@ struct AddExpenseManualView: View {
                 .foregroundColor(Theme.textDark)
         }
         .padding(12)
-        .background(Color.gray.opacity(0.2))
+        .background(Color.gray.opacity(0.1))
         .cornerRadius(30)
     }
+    
+    private func getCategoryIcon(_ category: String) -> String {
+        switch category {
+        case "Food & Beverage": return "fork.knife"
+        case "Transportation": return "car.fill"
+        case "Utilities": return "house.fill"
+        default: return "tag.fill"
+        }
+    }
+    
+    private func getCategoryColor(_ category: String) -> Color {
+        switch category {
+        case "Food & Beverage": return .yellow
+        case "Transportation": return Theme.expenseRed
+        case "Utilities": return Theme.incomePurple
+        default: return .gray
+        }
+    }
 }
+
