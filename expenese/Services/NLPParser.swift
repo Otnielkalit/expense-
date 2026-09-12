@@ -20,7 +20,6 @@ enum NLPParser {
     static func parse(_ rawText: String) -> [ParsedExpense] {
         let text = rawText.trimmingCharacters(in: .whitespacesAndNewlines)
         
-        // Split by punctuation and Indonesian/English conjunctions/pronouns
         let pattern = "(?i)(,(?!\\d)|\\.(?!\\d)|\\baku\\b|\\bsaya\\b|\\bterus\\b|\\bkemudian\\b|\\blalu\\b|\\bdan\\b|\\band\\b)"
         
         let splitText = text.replacingOccurrences(of: pattern, with: "|", options: .regularExpression)
@@ -33,21 +32,18 @@ enum NLPParser {
         var chunkBuffer = ""
         
         for chunk in rawChunks {
-            // Accumulate text until we find a number (amount)
             let combinedText = chunkBuffer.isEmpty ? chunk : "\(chunkBuffer) \(chunk)"
             let (amount, _) = AmountParser.parse(from: combinedText)
             
             if amount == 0 {
-                // Buffer it and wait for the next chunk which hopefully has an amount
                 chunkBuffer = combinedText
                 continue
             }
             
-            // Found a valid amount! Parse this combined chunk
             let payment = PaymentMapper.match(in: combinedText)
             let category = CategoryMapper.match(in: combinedText)
             let date = DateParser.parse(from: combinedText) ?? lastDate
-            lastDate = date // Inherit for subsequent chunks
+            lastDate = date
             
             let description = combinedText.isEmpty ? "" : "\(combinedText) | Rp\(Int(amount).formatted())"
             
@@ -60,11 +56,9 @@ enum NLPParser {
                 date: date
             ))
             
-            // Clear buffer
             chunkBuffer = ""
         }
         
-        // Fallback if everything was filtered out
         if expenses.isEmpty {
             expenses.append(ParsedExpense(
                 amount: AmountParser.parse(from: text).amount,

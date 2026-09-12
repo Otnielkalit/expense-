@@ -8,11 +8,7 @@
 import Foundation
 import UIKit
 
-/// Pusat routing URL dari Siri/URL scheme ke seluruh app.
-/// Menggunakan AppDelegate + NotificationCenter supaya paling andal,
-/// tidak bergantung pada timing `onOpenURL` SwiftUI.
 final class AppDelegate: NSObject, UIApplicationDelegate {
-    /// Post setiap kali ada URL masuk, subscript meneruskan ke ContentView.
     func application(
         _ app: UIApplication,
         open url: URL,

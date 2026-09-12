@@ -65,7 +65,7 @@ struct ContentView: View {
         }
         .padding(.horizontal, 40)
         .padding(.vertical, 12)
-        .background(Theme.tabBarBg)
+        .background(Color.gray.opacity(0.8))
         .clipShape(Capsule())
         .padding(.horizontal, 40)
         .padding(.bottom, 20)
@@ -93,7 +93,7 @@ struct TabBarButton: View {
                 Text(title)
                     .font(.system(size: 10, weight: .bold))
             }
-            .foregroundColor(isSelected ? Theme.tabActive : .white)
+            .foregroundColor(isSelected ? .blue : .white)
         }
     }
 }

@@ -6,74 +6,83 @@
 //
 
 import SwiftUI
-import SwiftData
 
 struct TryVoiceView: View {
     @StateObject private var audioManager = AudioLevelManager()
-    @State private var isListening = false
+    @State private var isRecording = false
+    @State private var showManual = false
     
     var body: some View {
-        VStack(spacing: 40) {
-            Spacer()
-            
-            Text(isListening ? "I'm Listening" : "Tap to Speak")
-                .font(.system(size: 28, weight: .bold, design: .rounded))
-                .foregroundColor(.primary)
+        VStack(spacing: 60) {
             
             Spacer()
-            
-            ZStack {
-                // Outer circle (static)
-                Circle()
-                    .fill(Color.gray.opacity(0.1))
-                    .frame(width: 300, height: 300)
-                
-                // Middle circle (static)
-                Circle()
-                    .fill(Color.gray.opacity(0.2))
-                    .frame(width: 230, height: 230)
-                
-                // Inner circle (static)
-                Circle()
-                    .fill(Color.gray.opacity(0.4))
-                    .frame(width: 170, height: 170)
-                
-                // Center button (Animated Waveform)
-                Button(action: {
-                    toggleListening()
-                }) {
-                    AudioWaveformView(level: isListening ? audioManager.level : 0)
-                        .frame(width: 150, height: 120)
-                        .contentShape(Rectangle()) // Make the whole frame tappable
-                }
-                .buttonStyle(PlainButtonStyle())
+            VStack(spacing: 8) {
+                Text("Tell Me **Your**")
+                Text("**Expense** or **Income !**")
             }
-            .frame(height: 350)
+            .font(.system(size: 32))
+            .multilineTextAlignment(.center)
+            .foregroundColor(.black)
+            Button(action: {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) {
+                    isRecording.toggle()
+                    if isRecording {
+                        audioManager.startMonitoring()
+                    } else {
+                        audioManager.stopMonitoring()
+                    }
+                }
+            }) {
+                ZStack {
+                    Circle()
+                        .fill(Color.gray.opacity(0.2))
+                        .frame(width: 320, height: 320)
+                        .scaleEffect(isRecording ? 1.1 : 1.0)
+                    Circle()
+                        .fill(Color.gray.opacity(0.4))
+                        .frame(width: 250, height: 250)
+                        .scaleEffect(isRecording ? 1.05 : 1.0)
+                    Circle()
+                        .fill(Color.gray.opacity(0.6))
+                        .frame(width: 180, height: 180)
+                    if isRecording {
+                        AudioWaveformView(level: audioManager.level)
+                            .frame(width: 80, height: 60)
+                    } else {
+                        Image(systemName: "mic.fill")
+                            .font(.system(size: 60))
+                            .foregroundColor(.black)
+                    }
+                }
+            }
+            .buttonStyle(PlainButtonStyle())
             
             Spacer()
             
-            Text("\"Today My Expense Meat ball, Cash 35K\nin Greenland Batam\"")
-                .font(.system(size: 18, weight: .regular, design: .serif))
-                .italic()
-                .multilineTextAlignment(.center)
-                .foregroundColor(.primary)
-                .padding(.horizontal, 40)
+            Button(action: {
+                showManual = true 
+            }) {
+                Text("+ Add Manual")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 32)
+                    .padding(.vertical, 14)
+                    .background(Color(red: 0, green: 0.5, blue: 1.0))
+                    .clipShape(Capsule())
+                    .shadow(color: Color.blue.opacity(0.3), radius: 10, x: 0, y: 5)
+            }
             
-            Spacer()
             Spacer()
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.white)
+        .fullScreenCover(isPresented: $showManual) {
+            AddExpenseManualView()
+        }
+
         .onDisappear {
             audioManager.stopMonitoring()
-        }
-    }
-    
-    private func toggleListening() {
-        if isListening {
-            audioManager.stopMonitoring()
-            isListening = false
-        } else {
-            audioManager.startMonitoring()
-            isListening = true
+            isRecording = false
         }
     }
 }
@@ -81,7 +90,6 @@ struct TryVoiceView: View {
 struct AudioWaveformView: View {
     let level: CGFloat
     
-    // We'll use 11 bars to match the new design
     var body: some View {
         HStack(spacing: 5) {
             ForEach(0..<11) { index in
@@ -94,18 +102,10 @@ struct AudioWaveformView: View {
     }
     
     private func barHeight(for index: Int) -> CGFloat {
-        // Base minimum height based on distance from center
         let center = 5.0
         let distance = abs(CGFloat(index) - center)
-        
-        // Base height is smaller at edges, larger in middle
         let baseMinHeight: CGFloat = 8 + (5 - distance) * 2
-        
-        // Multiplier based on distance from center
-        // Middle bar (index 5) moves the most, outer bars move less
         let multiplier = 1.0 - (distance * 0.15)
-        
-        // Dynamic height can go up to 100 for the center bar
         let dynamicHeight = level * 100 * multiplier
         return baseMinHeight + dynamicHeight
     }
