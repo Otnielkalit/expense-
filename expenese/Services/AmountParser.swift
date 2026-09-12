@@ -8,7 +8,7 @@
 import Foundation
 
 enum AmountParser {
-    private static let numberPattern = #"(\d[\d.,]*)\s*(thousand|k|ribu|million|m|juta)?"#
+    private static let numberPattern = #"(?:rp\.?\s*|idr\s*)?(\d[\d.,]*)\s*(thousand|k|ribu|million|m|juta)?"#
 
     private static let regex = try! NSRegularExpression(
         pattern: numberPattern,

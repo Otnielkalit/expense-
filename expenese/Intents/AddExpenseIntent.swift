@@ -7,6 +7,7 @@
 
 import AppIntents
 import SwiftUI
+import SwiftData
 
 struct AddExpenseIntent: AppIntent {
     static var title: LocalizedStringResource = "Add Expense"
@@ -16,23 +17,38 @@ struct AddExpenseIntent: AppIntent {
     var speech: String
 
     func perform() async throws -> some IntentResult {
-        let parsedList = NLPParser.parse(speech)
-        let drafts = parsedList.map { parsed in
-            Draft(
-                amount: parsed.amount,
-                category: parsed.category,
-                paymentMethod: parsed.paymentMethod,
-                paymentType: parsed.paymentType,
-                desc: parsed.description,
-                date: parsed.date
-            )
+        let (customCategories, drafts, url) = await MainActor.run {
+            var categories: [String] = []
+            if let container = AppDependencies.shared.container {
+                let context = ModelContext(container)
+                let descriptor = FetchDescriptor<ExpenseCategory>()
+                if let fetched = try? context.fetch(descriptor) {
+                    categories = fetched.map { $0.name }
+                }
+            }
+            
+            let parsedList = NLPParser.parse(speech, customCategories: categories)
+            let draftList = parsedList.map { parsed in
+                Draft(
+                    amount: parsed.amount,
+                    category: parsed.category,
+                    paymentMethod: parsed.paymentMethod,
+                    paymentType: parsed.paymentType,
+                    desc: parsed.description,
+                    date: parsed.date,
+                    isExpense: parsed.isExpense
+                )
+            }
+            
+            let u = VoiceDraftURL.make(drafts: draftList)
+            return (categories, draftList, u)
         }
         
-        guard let url = VoiceDraftURL.make(drafts: drafts) else {
+        guard let validUrl = url else {
             throw NSError(domain: "AddExpenseIntent", code: 1, userInfo: [NSLocalizedDescriptionKey: "Sorry, I couldn't process that."])
         }
 
-        await AppEnvironment.open(url)
+        await AppEnvironment.open(validUrl)
         return .result()
     }
 }
