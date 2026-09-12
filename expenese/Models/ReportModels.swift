@@ -137,12 +137,12 @@ enum CategoryStyle {
         CategoryCatalog.displayName(for: raw)
     }
 
-    static func icon(for name: String, customCategories: [ExpenseCategory] = []) -> String {
+    static func icon(for name: String, customCategories: [Category] = []) -> String {
         if let custom = customCategories.first(where: { $0.name == name }) { return custom.icon }
         return CategoryCatalog.icon(for: name)
     }
 
-    static func color(for name: String, customCategories: [ExpenseCategory] = []) -> Color {
+    static func color(for name: String, customCategories: [Category] = []) -> Color {
         if let custom = customCategories.first(where: { $0.name == name }) { return Color(hex: custom.colorHex) }
         return CategoryCatalog.color(for: name)
     }
@@ -206,7 +206,7 @@ enum ReportHelper {
         }
     }
 
-    static func categories(from expenses: [Expense], customCategories: [ExpenseCategory] = []) -> [ReportCategoryItem] {
+    static func categories(from expenses: [Expense], customCategories: [Category] = []) -> [ReportCategoryItem] {
         let grouped = Dictionary(grouping: expenses, by: { CategoryStyle.displayName(for: $0.category) })
         let total = expenses.reduce(0) { $0 + $1.amount }
 
