@@ -5,10 +5,12 @@
 //  Created by otnielkalit on 11/09/26.
 //
 
+import SwiftData
 import SwiftUI
 
 struct AddExpenseManualView: View {
     @Environment(\.dismiss) var dismiss
+    @Query(sort: \Category.sortOrder) private var categories: [Category]
     @State private var amountText: String = "35.000"
     @State private var descriptionText: String = ""
     @State private var selectedCategory: String = "Food & Beverage"
@@ -63,21 +65,21 @@ struct AddExpenseManualView: View {
                                     .font(.system(size: 16, weight: .bold))
                                 
                                 Menu {
-                                    Button(action: { selectedCategory = "Food & Beverage" }) {
-                                        Label("Food & Beverage", systemImage: "fork.knife")
-                                    }
-                                    Button(action: { selectedCategory = "Transportation" }) {
-                                        Label("Transportation", systemImage: "car.fill")
-                                    }
-                                    Button(action: { selectedCategory = "Utilities" }) {
-                                        Label("Utilities", systemImage: "house.fill")
+                                    ForEach(categories) { category in
+                                        Button(action: { selectedCategory = category.name }) {
+                                            Label(category.name, systemImage: category.icon)
+                                        }
                                     }
                                     Divider()
                                     Button(action: { showAddCategoryModal = true }) {
                                         Label("Add Category", systemImage: "plus")
                                     }
                                 } label: {
-                                    pickerLabel(icon: getCategoryIcon(selectedCategory), iconBg: getCategoryColor(selectedCategory), text: selectedCategory)
+                                    pickerLabel(
+                                        icon: CategoryCatalog.icon(for: selectedCategory, in: categories),
+                                        iconBg: CategoryCatalog.color(for: selectedCategory, in: categories),
+                                        text: selectedCategory
+                                    )
                                 }
                             }
                        
@@ -141,10 +143,14 @@ struct AddExpenseManualView: View {
             .presentationDetents([.medium])
             .presentationDragIndicator(.visible)
         }
-        .sheet(isPresented: $showAddCategoryModal) {
-            AddCategoryView()
-                .presentationDetents([.large])
-                .presentationDragIndicator(.visible)
+        .addCategorySheet(isPresented: $showAddCategoryModal) { category in
+            selectedCategory = category.name
+        }
+        .onAppear {
+            if CategoryCatalog.find(selectedCategory, in: categories) == nil,
+               let first = categories.first {
+                selectedCategory = first.name
+            }
         }
     }
     
@@ -208,24 +214,6 @@ struct AddExpenseManualView: View {
         .padding(12)
         .background(Color.gray.opacity(0.1))
         .cornerRadius(30)
-    }
-    
-    private func getCategoryIcon(_ category: String) -> String {
-        switch category {
-        case "Food & Beverage": return "fork.knife"
-        case "Transportation": return "car.fill"
-        case "Utilities": return "house.fill"
-        default: return "tag.fill"
-        }
-    }
-    
-    private func getCategoryColor(_ category: String) -> Color {
-        switch category {
-        case "Food & Beverage": return .yellow
-        case "Transportation": return Theme.expenseRed
-        case "Utilities": return Theme.incomePurple
-        default: return .gray
-        }
     }
 }
 

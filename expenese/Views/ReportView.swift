@@ -23,7 +23,6 @@ struct ReportView: View {
         NavigationStack {
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 22) {
-                    header
                     periodPicker
 
                     Text("Expenses Report")
@@ -50,7 +49,9 @@ struct ReportView: View {
                 .padding(.top, 8)
             }
             .background(Color.white)
-            .toolbar(.hidden, for: .navigationBar)
+            .navigationTitle("Report")
+            .navigationBarTitleDisplayMode(.automatic)
+            .toolbarBackground(.visible, for: .navigationBar)
             .onChange(of: period) { _, newPeriod in
                 selectedDate = ReportDummyData.nearestAvailableDate(to: selectedDate, period: newPeriod)
             }
@@ -146,50 +147,44 @@ private struct ReportDateFilter: View {
     @Binding var selectedDate: Date
 
     var body: some View {
-        HStack(spacing: 8) {
-            stepButton(offset: -1, icon: "chevron.left")
-
-            Menu {
-                switch period {
-                case .weekly:
-                    ForEach(ReportDummyData.weeks(inMonthOf: selectedDate)) { week in
-                        Button {
-                            selectedDate = week.start
-                        } label: {
-                            dateMenuLabel(
-                                week.label,
-                                isSelected: ReportDummyData.isDate(selectedDate, in: week)
-                            )
-                        }
-                    }
-                case .monthly:
-                    ForEach(ReportDummyData.availableMonths, id: \.self) { month in
-                        Button {
-                            selectedDate = month
-                        } label: {
-                            dateMenuLabel(ReportFormat.month(month), isSelected: isSameMonth(month))
-                        }
+        Menu {
+            switch period {
+            case .weekly:
+                ForEach(ReportDummyData.weeks(inMonthOf: selectedDate)) { week in
+                    Button {
+                        selectedDate = week.start
+                    } label: {
+                        dateMenuLabel(
+                            week.label,
+                            isSelected: ReportDummyData.isDate(selectedDate, in: week)
+                        )
                     }
                 }
-            } label: {
-                HStack(spacing: 8) {
-                    Image(systemName: "calendar")
-                        .font(.system(size: 14, weight: .semibold))
-                    Text(filterLabel)
-                        .font(.system(size: 15, weight: .medium))
-                    Image(systemName: "chevron.down")
-                        .font(.system(size: 11, weight: .semibold))
+            case .monthly:
+                ForEach(ReportDummyData.availableMonths, id: \.self) { month in
+                    Button {
+                        selectedDate = month
+                    } label: {
+                        dateMenuLabel(ReportFormat.month(month), isSelected: isSameMonth(month))
+                    }
                 }
-                .foregroundColor(.black)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 12)
             }
-
-            stepButton(offset: 1, icon: "chevron.right")
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "calendar")
+                    .font(.system(size: 14, weight: .semibold))
+                Text(filterLabel)
+                    .font(.system(size: 15, weight: .medium))
+                Spacer()
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 11, weight: .semibold))
+            }
+            .foregroundColor(.black)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .background(Color(white: 0.93))
+            .clipShape(Capsule())
         }
-        .padding(.horizontal, 8)
-        .background(Color(white: 0.93))
-        .clipShape(Capsule())
     }
 
     private var filterLabel: String {
@@ -199,23 +194,6 @@ private struct ReportDateFilter: View {
         case .monthly:
             return ReportFormat.month(selectedDate)
         }
-    }
-
-    private func stepButton(offset: Int, icon: String) -> some View {
-        let enabled = ReportDummyData.canStep(selectedDate, by: offset, period: period)
-        return Button {
-            guard let next = ReportDummyData.stepDate(selectedDate, by: offset, period: period) else { return }
-            withAnimation(.easeInOut(duration: 0.2)) {
-                selectedDate = next
-            }
-        } label: {
-            Image(systemName: icon)
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundColor(enabled ? .black : .gray.opacity(0.35))
-                .frame(width: 36, height: 36)
-        }
-        .disabled(!enabled)
-        .buttonStyle(.plain)
     }
 
     @ViewBuilder

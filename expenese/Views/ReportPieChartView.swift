@@ -17,6 +17,7 @@ struct ReportPieChartView: View {
         VStack(spacing: 16) {
             DonutChartView(
                 slices: chartSlices,
+                totalAmount: totalAmount,
                 selectedID: selectedCategory?.id
             ) { item in
                 selectedCategory = item
@@ -32,7 +33,7 @@ struct ReportPieChartView: View {
             ReportCategoryDetailSheet(
                 category: category,
                 expenses: expenses
-                    .filter { $0.category == category.name }
+                    .filter { CategoryStyle.displayName(for: $0.category) == category.name }
                     .sorted { $0.date > $1.date }
             )
             .presentationDetents([.medium, .large])
@@ -45,6 +46,10 @@ struct ReportPieChartView: View {
 
     private var chartSlices: [ReportCategoryItem] {
         categories.sorted { $0.amount > $1.amount }
+    }
+
+    private var totalAmount: Double {
+        categories.reduce(0) { $0 + $1.amount }
     }
 
     private var legend: some View {
@@ -76,11 +81,12 @@ struct ReportPieChartView: View {
 
 private struct DonutChartView: View {
     let slices: [ReportCategoryItem]
+    let totalAmount: Double
     let selectedID: String?
     let onSelect: (ReportCategoryItem) -> Void
 
     private let gap: Double = 2
-    private let innerRatio: CGFloat = 0.62
+    private let innerRatio: CGFloat = 0.64
     private let explodeDistance: CGFloat = 12
     private let growRadius: CGFloat = 10
 
@@ -112,6 +118,17 @@ private struct DonutChartView: View {
                         )
                     }
                 }
+
+                VStack(spacing: 4) {
+                    Text("Total")
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundColor(Color(red: 0.16, green: 0.17, blue: 0.24))
+                    Text(ReportFormat.compactRupiah(totalAmount))
+                        .font(.system(size: 22, weight: .semibold))
+                        .foregroundColor(Color(red: 0.78, green: 0.40, blue: 0.40))
+                }
+                .multilineTextAlignment(.center)
+                .allowsHitTesting(false)
             }
             .frame(width: geo.size.width, height: geo.size.height)
         }

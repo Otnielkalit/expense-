@@ -44,7 +44,7 @@ struct EditExpenseView: View {
         for draft in drafts {
             let expense = Expense(
                 amount: draft.amount,
-                category: draft.category,
+                category: CategoryCatalog.displayName(for: draft.category),
                 paymentMethod: draft.paymentMethod,
                 paymentType: draft.paymentType,
                 desc: draft.desc,
@@ -60,7 +60,9 @@ struct EditExpenseView: View {
 struct DraftEditorView: View {
     let index: Int
     @Binding var draft: Draft
+    @Query(sort: \Category.sortOrder) private var categories: [Category]
     @State private var amountText: String
+    @State private var showAddCategory = false
     
     init(index: Int, draft: Binding<Draft>) {
         self.index = index
@@ -89,14 +91,40 @@ struct DraftEditorView: View {
             }
             
             HStack {
-                Image(systemName: "tag.fill")
-                    .foregroundColor(.blue)
+                Image(systemName: CategoryCatalog.icon(for: draft.category, in: categories))
+                    .foregroundColor(CategoryCatalog.color(for: draft.category, in: categories))
                     .frame(width: 28)
                 Text("Category")
                 Spacer()
-                TextField("Category", text: $draft.category)
-                    .multilineTextAlignment(.trailing)
-                    .foregroundColor(.secondary)
+                Menu {
+                    ForEach(categories) { category in
+                        Button {
+                            draft.category = category.name
+                        } label: {
+                            Label(category.name, systemImage: category.icon)
+                        }
+                    }
+                    Divider()
+                    Button {
+                        showAddCategory = true
+                    } label: {
+                        Label("Add Category", systemImage: "plus")
+                    }
+                } label: {
+                    HStack(spacing: 6) {
+                        Text(CategoryCatalog.displayName(for: draft.category))
+                            .foregroundColor(.secondary)
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(.secondary)
+                    }
+                }
+            }
+            .addCategorySheet(isPresented: $showAddCategory) { category in
+                draft.category = category.name
+            }
+            .onAppear {
+                draft.category = CategoryCatalog.displayName(for: draft.category)
             }
             
             HStack {
