@@ -6,10 +6,13 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct AddExpenseManualView: View {
+    @Environment(\.modelContext) private var modelContext
+    @Query private var customCategories: [ExpenseCategory]
     @Environment(\.dismiss) var dismiss
-    @State private var amountText: String = "35.000"
+    @State private var amountText: String = ""
     @State private var descriptionText: String = ""
     @State private var selectedCategory: String = "Food & Beverage"
     @State private var selectedMethod: String = "Cash"
@@ -33,7 +36,7 @@ struct AddExpenseManualView: View {
                         
                         VStack(spacing: 8) {
                             Button(action: { showDatePicker = true }) {
-                                Text("**Today**, 02 April 2026")
+                                Text(formatHeaderDate(selectedDate))
                                     .font(.system(size: 16))
                                     .foregroundColor(.primary)
                             }
@@ -48,7 +51,10 @@ struct AddExpenseManualView: View {
                                     .foregroundColor(.primary)
                                     .keyboardType(.numberPad)
                                     .onChange(of: amountText) { oldValue, newValue in
-                                        let filtered = newValue.filter { "0123456789".contains($0) }
+                                        var filtered = newValue.filter { "0123456789".contains($0) }
+                                        while filtered.hasPrefix("0") && filtered.count > 1 {
+                                            filtered.removeFirst()
+                                        }
                                         if filtered != newValue {
                                             amountText = filtered
                                         }
@@ -58,26 +64,34 @@ struct AddExpenseManualView: View {
                         
                         VStack(alignment: .leading, spacing: 24) {
                             
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text("Category")
-                                    .font(.system(size: 16, weight: .bold))
-                                
-                                Menu {
-                                    Button(action: { selectedCategory = "Food & Beverage" }) {
-                                        Label("Food & Beverage", systemImage: "fork.knife")
+                            if isExpense {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text("Category")
+                                        .font(.system(size: 16, weight: .bold))
+                                    
+                                    Menu {
+                                        Button(action: { selectedCategory = "Food & Beverage" }) {
+                                            Label("Food & Beverage", systemImage: "fork.knife")
+                                        }
+                                        Button(action: { selectedCategory = "Transportation" }) {
+                                            Label("Transportation", systemImage: "car.fill")
+                                        }
+                                        Button(action: { selectedCategory = "Utilities" }) {
+                                            Label("Utilities", systemImage: "house.fill")
+                                        }
+                                        Divider()
+                                        ForEach(customCategories, id: \.self) { cat in
+                                            Button(action: { selectedCategory = cat.name }) {
+                                                Label(cat.name, systemImage: cat.icon)
+                                            }
+                                        }
+                                        Divider()
+                                        Button(action: { showAddCategoryModal = true }) {
+                                            Label("Add Category", systemImage: "plus")
+                                        }
+                                    } label: {
+                                        pickerLabel(icon: getCategoryIcon(selectedCategory), iconBg: getCategoryColor(selectedCategory), text: selectedCategory)
                                     }
-                                    Button(action: { selectedCategory = "Transportation" }) {
-                                        Label("Transportation", systemImage: "car.fill")
-                                    }
-                                    Button(action: { selectedCategory = "Utilities" }) {
-                                        Label("Utilities", systemImage: "house.fill")
-                                    }
-                                    Divider()
-                                    Button(action: { showAddCategoryModal = true }) {
-                                        Label("Add Category", systemImage: "plus")
-                                    }
-                                } label: {
-                                    pickerLabel(icon: getCategoryIcon(selectedCategory), iconBg: getCategoryColor(selectedCategory), text: selectedCategory)
                                 }
                             }
                        
@@ -126,7 +140,41 @@ struct AddExpenseManualView: View {
                         .cornerRadius(24)
                         .padding(.horizontal, 16)
                         .zIndex(1) // Ensure it stays above other elements for dropdown
+                        
+                        // Save Button
+                        Button(action: {
+                            // Hitung nominal (hapus titik agar bisa dikonversi ke Double)
+                            let cleanAmount = amountText.replacingOccurrences(of: ".", with: "")
+                            let amountDouble = Double(cleanAmount) ?? 0.0
+                            
+                            let categoryToSave = isExpense ? selectedCategory : "Income"
+                            
+                            let newExpense = Expense(
+                                amount: amountDouble,
+                                category: categoryToSave,
+                                paymentMethod: selectedMethod,
+                                paymentType: .cash,
+                                desc: descriptionText,
+                                date: selectedDate,
+                                isExpense: isExpense
+                            )
+                            
+                            modelContext.insert(newExpense)
+                            try? modelContext.save()
+                            dismiss()
+                        }) {
+                            Text("Save Record")
+                                .font(.system(size: 18, weight: .bold))
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 16)
+                                .background(amountText.isEmpty || amountText == "0" ? Color.gray : Color.blue)
+                                .cornerRadius(16)
+                        }
+                        .disabled(amountText.isEmpty || amountText == "0")
+                        .padding(.horizontal, 16)
                     }
+                    .padding(.bottom, 24)
                 }
             }
         }
@@ -211,6 +259,9 @@ struct AddExpenseManualView: View {
     }
     
     private func getCategoryIcon(_ category: String) -> String {
+        if let custom = customCategories.first(where: { $0.name == category }) {
+            return custom.icon
+        }
         switch category {
         case "Food & Beverage": return "fork.knife"
         case "Transportation": return "car.fill"
@@ -220,12 +271,40 @@ struct AddExpenseManualView: View {
     }
     
     private func getCategoryColor(_ category: String) -> Color {
+        if let custom = customCategories.first(where: { $0.name == category }) {
+            return Color(hex: custom.colorHex)
+        }
         switch category {
         case "Food & Beverage": return .yellow
         case "Transportation": return Theme.expenseRed
         case "Utilities": return Theme.incomePurple
         default: return .gray
         }
+    }
+    
+    private func formatHeaderDate(_ date: Date) -> AttributedString {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "dd MMMM yyyy"
+        let dateString = formatter.string(from: date)
+        
+        let calendar = Calendar.current
+        var prefix = ""
+        
+        if calendar.isDateInToday(date) {
+            prefix = "Today, "
+        } else if calendar.isDateInYesterday(date) {
+            prefix = "Yesterday, "
+        } else {
+            let weekdayFormatter = DateFormatter()
+            weekdayFormatter.dateFormat = "EEEE, "
+            prefix = weekdayFormatter.string(from: date)
+        }
+        
+        var attrString = AttributedString("\(prefix)\(dateString)")
+        if let range = attrString.range(of: prefix.dropLast(2)) { // omit the comma and space for bolding
+            attrString[range].font = .system(size: 16, weight: .bold)
+        }
+        return attrString
     }
 }
 

@@ -10,6 +10,28 @@ import SwiftData
 
 struct HomeView: View {
     @Query(sort: \Expense.date, order: .reverse) private var expenses: [Expense]
+    @Query private var customCategories: [ExpenseCategory]
+    @State private var showSettings = false
+    
+    // Computed properties for real data
+    private var totalExpense: Double {
+        expenses.filter { $0.isExpense }.reduce(0) { $0 + $1.amount }
+    }
+    private var totalIncome: Double {
+        expenses.filter { !$0.isExpense }.reduce(0) { $0 + $1.amount }
+    }
+    private var balance: Double {
+        totalIncome - totalExpense
+    }
+    
+    private func expensesForDay(_ day: Int) -> Double {
+        let calendar = Calendar.current
+        return expenses.filter { 
+            $0.isExpense && 
+            calendar.component(.day, from: $0.date) == day &&
+            calendar.isDate($0.date, equalTo: Date(), toGranularity: .month) // Only current month
+        }.reduce(0) { $0 + $1.amount }
+    }
     
     var body: some View {
         ZStack(alignment: .top) {
@@ -28,6 +50,9 @@ struct HomeView: View {
                 }
                 .padding(.top, 20)
             }
+        }
+        .sheet(isPresented: $showSettings) {
+            SettingsView()
         }
     }
 }
@@ -56,11 +81,13 @@ extension HomeView {
                 
                 Spacer()
                 
-                Image(systemName: "gearshape.circle.fill")
-                    .resizable()
-                    .frame(width: 30, height: 30)
-                    .foregroundColor(Theme.textDark)
-                    .padding(.trailing, 24)
+                Button(action: { showSettings = true }) {
+                    Image(systemName: "gearshape.circle.fill")
+                        .resizable()
+                        .frame(width: 30, height: 30)
+                        .foregroundColor(Theme.textDark)
+                }
+                .padding(.trailing, 24)
             }
             // Posisikan picker sedikit ke kiri karena ada tombol setting di kanan
             .padding(.leading, 54)
@@ -71,12 +98,12 @@ extension HomeView {
                     .font(.system(size: 20, design: .rounded))
                     .foregroundColor(Theme.textDark)
                 
-                Text("Rp 500.000") // Sementara hardcode
+                Text(ReportFormat.rupiahFull(totalExpense))
                     .font(.system(size: 56, weight: .bold, design: .rounded))
                     .foregroundColor(Theme.expenseRed)
                     .shadow(color: Theme.expenseRed.opacity(0.3), radius: 10, y: 5)
                 
-                Text("Your **Balance** Rp 100.000")
+                Text("Your **Balance** \(ReportFormat.rupiahFull(balance))")
                     .font(.system(size: 14, design: .rounded))
                     .foregroundColor(Theme.incomePurple)
             }
@@ -94,8 +121,8 @@ extension HomeView {
                     .foregroundColor(Theme.textDark)
                 
                 HStack(spacing: 16) {
-                    moneyCard(title: "Income", amount: "Rp 600.000", icon: "dollarsign", bg: Theme.bgIncomeCard, logoColor: Theme.incomePurple)
-                    moneyCard(title: "Expenses", amount: "Rp 500.000", icon: "wallet.pass.fill", bg: Theme.bgExpenseCard, logoColor: Theme.expenseRed)
+                    moneyCard(title: "Income", amount: ReportFormat.rupiahFull(totalIncome), icon: "dollarsign", bg: Theme.bgIncomeCard, logoColor: Theme.incomePurple)
+                    moneyCard(title: "Expenses", amount: ReportFormat.rupiahFull(totalExpense), icon: "wallet.pass.fill", bg: Theme.bgExpenseCard, logoColor: Theme.expenseRed)
                 }
             }
             .padding(.horizontal, 24)
@@ -107,11 +134,11 @@ extension HomeView {
                     .foregroundColor(Theme.textDark)
                 
                 HStack {
-                    Text("Tuesday, 01 April 2026")
+                    Text("Today, \(ReportFormat.day(Date()))")
                         .font(.system(size: 14, design: .rounded))
                         .foregroundColor(.gray)
                     Spacer()
-                    Text("Total **Rp 500.000**")
+                    Text("Total **\(ReportFormat.rupiahFull(totalExpense))**")
                         .font(.system(size: 14, design: .rounded))
                         .foregroundColor(Theme.expenseRed)
                 }
@@ -123,12 +150,26 @@ extension HomeView {
                 
                 // List Transaksi bergaya Card Putih bersatu
                 VStack(spacing: 0) {
-                    transactionRow(icon: "fork.knife", color: .yellow, name: "Makan Sate Padang", amount: "-Rp 200 K", date: "1 Apr")
-                    Divider().padding(.leading, 50)
-                    transactionRow(icon: "car.fill", color: Theme.expenseRed, name: "Grab Car Pollux Habibi", amount: "-Rp 100 K", date: "1 Apr")
-                    Divider().padding(.leading, 50)
-                    transactionRow(icon: "house.fill", color: Theme.incomePurple, name: "Bayar Listrik Rusun", amount: "-Rp 200 K", date: "1 Apr")
-                    Divider()
+                    if expenses.isEmpty {
+                        Text("No records found.")
+                            .font(.system(size: 14, design: .rounded))
+                            .foregroundColor(.gray)
+                            .padding(.vertical, 24)
+                    } else {
+                        ForEach(Array(expenses.prefix(3).enumerated()), id: \.element.id) { index, expense in
+                            transactionRow(
+                                icon: getCategoryIcon(expense.category),
+                                color: getCategoryColor(expense.category),
+                                name: expense.desc.isEmpty ? expense.category : expense.desc,
+                                amount: (expense.isExpense ? "-" : "+") + ReportFormat.rupiahFull(expense.amount),
+                                date: ReportFormat.day(expense.date),
+                                isExpense: expense.isExpense
+                            )
+                            if index < min(expenses.count, 3) - 1 {
+                                Divider().padding(.leading, 50)
+                            }
+                        }
+                    }
                     
                     Button("Show more") {
                         // Action
@@ -151,7 +192,7 @@ extension HomeView {
             
             // Header Kalender (Bulan & Tombol Panah)
             HStack {
-                Text("April 2026")
+                Text(ReportFormat.month(Date()))
                     .font(.system(size: 18, weight: .bold, design: .rounded))
                     .foregroundColor(Theme.textDark)
                 Image(systemName: "chevron.right")
@@ -188,9 +229,10 @@ extension HomeView {
                 
                 // Cetak Tanggal 1 s/d 30
                 ForEach(1...30, id: \.self) { date in
+                    let dayTotal = expensesForDay(date)
                     VStack(spacing: 4) {
-                        if date == 1 {
-                            // Tanggal 1: Lingkaran Biru Muda
+                        if dayTotal > 0 {
+                            // Ada Pengeluaran di Hari Ini
                             Text("\(date)")
                                 .font(.system(size: 16, weight: .bold, design: .rounded))
                                 .foregroundColor(.blue)
@@ -198,18 +240,19 @@ extension HomeView {
                                 .background(Color.blue.opacity(0.15))
                                 .clipShape(Circle())
                             
-                            // Tulisan merah "500K"
-                            Text("500K")
+                            Text(ReportFormat.rupiah(dayTotal))
                                 .font(.system(size: 10, weight: .bold, design: .rounded))
                                 .foregroundColor(Theme.expenseRed)
-                        } else if date == 21 {
-                            // Tanggal 21: Warna Biru
+                        } else if date == Calendar.current.component(.day, from: Date()) {
+                            // Hari Ini (Today) tapi tidak ada pengeluaran
                             Text("\(date)")
-                                .font(.system(size: 16, weight: .medium, design: .rounded))
-                                .foregroundColor(.blue)
+                                .font(.system(size: 16, weight: .bold, design: .rounded))
+                                .foregroundColor(.white)
                                 .frame(width: 34, height: 34)
+                                .background(Color.blue)
+                                .clipShape(Circle())
                             
-                            Text("").font(.system(size: 10)) // Ruang kosong agar sejajar
+                            Text("").font(.system(size: 10))
                         } else {
                             // Tanggal Biasa
                             Text("\(date)")
@@ -253,7 +296,7 @@ extension HomeView {
         .cornerRadius(24)
     }
     
-    private func transactionRow(icon: String, color: Color, name: String, amount: String, date: String) -> some View {
+    private func transactionRow(icon: String, color: Color, name: String, amount: String, date: String, isExpense: Bool = true) -> some View {
         HStack(spacing: 16) {
             Image(systemName: icon)
                 .font(.system(size: 16))
@@ -271,7 +314,7 @@ extension HomeView {
             VStack(alignment: .trailing, spacing: 4) {
                 Text(amount)
                     .font(.system(size: 14, weight: .bold, design: .rounded))
-                    .foregroundColor(Theme.expenseRed)
+                    .foregroundColor(isExpense ? Theme.expenseRed : Theme.incomePurple)
                 Text(date)
                     .font(.system(size: 12, design: .rounded))
                     .foregroundColor(.gray)
@@ -280,6 +323,14 @@ extension HomeView {
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
     }
+    
+    private func getCategoryIcon(_ name: String) -> String {
+        if let custom = customCategories.first(where: { $0.name == name }) { return custom.icon }
+        return CategoryStyle.icon(for: name)
+    }
+    
+    private func getCategoryColor(_ name: String) -> Color {
+        if let custom = customCategories.first(where: { $0.name == name }) { return Color(hex: custom.colorHex) }
+        return CategoryStyle.color(for: name)
+    }
 }
-
-

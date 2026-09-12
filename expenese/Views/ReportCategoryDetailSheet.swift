@@ -9,7 +9,7 @@ import SwiftUI
 
 struct ReportCategoryDetailSheet: View {
     let category: ReportCategoryItem
-    let expenses: [ReportDummyExpense]
+    let expenses: [Expense]
 
     private var totalAmount: Double {
         expenses.reduce(0) { $0 + $1.amount }
@@ -64,7 +64,7 @@ struct ReportCategoryDetailSheet: View {
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
 
-    private func transactionRow(_ expense: ReportDummyExpense) -> some View {
+    private func transactionRow(_ expense: Expense) -> some View {
         HStack(spacing: 12) {
             Image(systemName: category.icon)
                 .font(.system(size: 14, weight: .semibold))
@@ -74,7 +74,7 @@ struct ReportCategoryDetailSheet: View {
                 .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(expense.title)
+                Text(expense.desc.isEmpty ? expense.category : expense.desc)
                     .font(.system(size: 16, weight: .medium))
                     .foregroundColor(.white)
                 Text(ReportFormat.day(expense.date))
@@ -96,10 +96,8 @@ struct ReportCategoryDetailSheet: View {
 }
 
 #Preview {
-    let expenses = ReportDummyData.expenses(for: ReportDummyData.defaultDate, period: .weekly)
-    let categories = ReportDummyData.categories(from: expenses)
     return ReportCategoryDetailSheet(
-        category: categories[0],
-        expenses: expenses.filter { $0.category == categories[0].name }
+        category: ReportCategoryItem(id: "Food", name: "Food", amount: 100, sliceWeight: 100, color: .blue, icon: "fork.knife"),
+        expenses: []
     )
 }

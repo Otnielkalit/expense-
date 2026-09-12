@@ -24,6 +24,22 @@ extension Color {
         }
         self.init(.sRGB, red: Double(r) / 255, green: Double(g) / 255, blue:  Double(b) / 255, opacity: Double(a) / 255)
     }
+    
+    // Konversi Color ke String Hex (Untuk disimpan ke database)
+    func toHex() -> String {
+        guard let cgColor = cgColor else { return "000000" }
+        let components = cgColor.components
+        let r: CGFloat = components?[0] ?? 0.0
+        let g: CGFloat = (cgColor.numberOfComponents > 2 ? components?[1] : r) ?? 0.0
+        let b: CGFloat = (cgColor.numberOfComponents > 2 ? components?[2] : r) ?? 0.0
+        
+        return String(
+            format: "%02lX%02lX%02lX",
+            lroundf(Float(r * 255)),
+            lroundf(Float(g * 255)),
+            lroundf(Float(b * 255))
+        )
+    }
 }
 
 struct Theme {

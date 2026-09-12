@@ -16,7 +16,7 @@ struct expeneseApp: App {
 
     init() {
         container = try! ModelContainer(
-            for: Expense.self,
+            for: Expense.self, ExpenseCategory.self,
             configurations: ModelConfiguration(
                 "expenese",
                 cloudKitDatabase: .automatic

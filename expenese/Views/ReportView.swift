@@ -6,17 +6,21 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct ReportView: View {
+    @Query private var expenses: [Expense]
+    @Query private var customCategories: [ExpenseCategory]
+    
     @State private var period: ReportPeriod = .weekly
-    @State private var selectedDate: Date = ReportDummyData.defaultDate
+    @State private var selectedDate: Date = ReportHelper.defaultDate
 
-    private var filteredExpenses: [ReportDummyExpense] {
-        ReportDummyData.expenses(for: selectedDate, period: period)
+    private var filteredExpenses: [Expense] {
+        ReportHelper.filteredExpenses(from: expenses, for: selectedDate, period: period)
     }
 
     private var displayedCategories: [ReportCategoryItem] {
-        ReportDummyData.categories(from: filteredExpenses)
+        ReportHelper.categories(from: filteredExpenses, customCategories: customCategories)
     }
 
     var body: some View {
@@ -30,7 +34,7 @@ struct ReportView: View {
                         .font(.system(size: 18, weight: .medium))
                         .foregroundColor(.black)
 
-                    ReportDateFilter(period: period, selectedDate: $selectedDate)
+                    ReportDateFilter(period: period, selectedDate: $selectedDate, allExpenses: expenses)
 
                     if displayedCategories.isEmpty {
                         emptyState
@@ -52,7 +56,7 @@ struct ReportView: View {
             .background(Color.white)
             .toolbar(.hidden, for: .navigationBar)
             .onChange(of: period) { _, newPeriod in
-                selectedDate = ReportDummyData.nearestAvailableDate(to: selectedDate, period: newPeriod)
+                selectedDate = ReportHelper.nearestAvailableDate(to: selectedDate, period: newPeriod, allExpenses: expenses)
             }
         }
     }
@@ -144,6 +148,7 @@ private extension ReportView {
 private struct ReportDateFilter: View {
     let period: ReportPeriod
     @Binding var selectedDate: Date
+    let allExpenses: [Expense]
 
     var body: some View {
         HStack(spacing: 8) {
@@ -152,18 +157,18 @@ private struct ReportDateFilter: View {
             Menu {
                 switch period {
                 case .weekly:
-                    ForEach(ReportDummyData.weeks(inMonthOf: selectedDate)) { week in
+                    ForEach(ReportHelper.weeks(inMonthOf: selectedDate)) { week in
                         Button {
                             selectedDate = week.start
                         } label: {
                             dateMenuLabel(
                                 week.label,
-                                isSelected: ReportDummyData.isDate(selectedDate, in: week)
+                                isSelected: ReportHelper.isDate(selectedDate, in: week)
                             )
                         }
                     }
                 case .monthly:
-                    ForEach(ReportDummyData.availableMonths, id: \.self) { month in
+                    ForEach(ReportHelper.availableMonths(from: allExpenses), id: \.self) { month in
                         Button {
                             selectedDate = month
                         } label: {
@@ -195,16 +200,16 @@ private struct ReportDateFilter: View {
     private var filterLabel: String {
         switch period {
         case .weekly:
-            return ReportDummyData.week(containing: selectedDate).label
+            return ReportHelper.week(containing: selectedDate).label
         case .monthly:
             return ReportFormat.month(selectedDate)
         }
     }
 
     private func stepButton(offset: Int, icon: String) -> some View {
-        let enabled = ReportDummyData.canStep(selectedDate, by: offset, period: period)
+        let enabled = ReportHelper.canStep(selectedDate, by: offset, period: period, allExpenses: allExpenses)
         return Button {
-            guard let next = ReportDummyData.stepDate(selectedDate, by: offset, period: period) else { return }
+            guard let next = ReportHelper.stepDate(selectedDate, by: offset, period: period, allExpenses: allExpenses) else { return }
             withAnimation(.easeInOut(duration: 0.2)) {
                 selectedDate = next
             }

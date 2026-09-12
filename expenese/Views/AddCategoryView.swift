@@ -6,8 +6,10 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct AddCategoryView: View {
+    @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) var dismiss
     @State private var categoryName: String = ""
     @State private var selectedIcon: String = "cart.fill"
@@ -108,7 +110,9 @@ struct AddCategoryView: View {
                     Spacer()
                     
                     Button(action: {
-                        // Action to save category
+                        let newCategory = ExpenseCategory(name: categoryName, icon: selectedIcon, colorHex: selectedColor.toHex())
+                        modelContext.insert(newCategory)
+                        try? modelContext.save()
                         dismiss()
                     }) {
                         Text("Save Category")

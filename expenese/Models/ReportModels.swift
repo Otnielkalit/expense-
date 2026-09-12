@@ -31,22 +31,6 @@ struct ReportCategoryItem: Identifiable, Equatable {
     }
 }
 
-struct ReportDummyExpense: Identifiable {
-    let id: UUID
-    let date: Date
-    let category: String
-    let amount: Double
-    let title: String
-
-    init(id: UUID = UUID(), date: Date, category: String, amount: Double, title: String) {
-        self.id = id
-        self.date = date
-        self.category = category
-        self.amount = amount
-        self.title = title
-    }
-}
-
 struct ReportWeek: Identifiable, Hashable {
     let start: Date
     let end: Date
@@ -96,12 +80,12 @@ enum ReportFormat {
 
     private static let calendar: Calendar = {
         var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = TimeZone(secondsFromGMT: 7 * 3600) ?? .current
+        calendar.timeZone = TimeZone.current
         calendar.firstWeekday = 2
         return calendar
     }()
 
-    private static let timeZone = TimeZone(secondsFromGMT: 7 * 3600)
+    private static let timeZone = TimeZone.current
 
     private static let monthFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -150,102 +134,49 @@ enum CategoryStyle {
         }
     }
 
-    static func icon(for name: String) -> String {
+    static func icon(for name: String, customCategories: [ExpenseCategory] = []) -> String {
+        if let custom = customCategories.first(where: { $0.name == name }) { return custom.icon }
         switch name.lowercased() {
-        case "food & beverage", "food":
-            return "fork.knife"
-        case "transportation", "transport":
-            return "car.fill"
-        case "shopping":
-            return "cart.fill"
-        case "entertainment":
-            return "film.fill"
-        case "utilities":
-            return "bolt.fill"
-        default:
-            return "tag.fill"
+        case "food & beverage", "food": return "fork.knife"
+        case "transportation", "transport": return "car.fill"
+        case "shopping": return "cart.fill"
+        case "entertainment": return "film.fill"
+        case "utilities": return "bolt.fill"
+        default: return "tag.fill"
         }
     }
 
-    static func color(for name: String) -> Color {
+    static func color(for name: String, customCategories: [ExpenseCategory] = []) -> Color {
+        if let custom = customCategories.first(where: { $0.name == name }) { return Color(hex: custom.colorHex) }
         switch name.lowercased() {
-        case "food & beverage", "food":
-            return Color(red: 0.29, green: 0.45, blue: 1.0)
-        case "transportation", "transport":
-            return Color(red: 0.18, green: 0.82, blue: 0.72)
-        case "shopping":
-            return Color(red: 1.0, green: 0.51, blue: 0.45)
-        case "entertainment":
-            return Color(red: 0.62, green: 0.45, blue: 0.98)
-        case "utilities":
-            return Color(red: 1.0, green: 0.72, blue: 0.28)
-        default:
-            return Color(white: 0.55)
+        case "food & beverage", "food": return Color(red: 0.29, green: 0.45, blue: 1.0)
+        case "transportation", "transport": return Color(red: 0.18, green: 0.82, blue: 0.72)
+        case "shopping": return Color(red: 1.0, green: 0.51, blue: 0.45)
+        case "entertainment": return Color(red: 0.62, green: 0.45, blue: 0.98)
+        case "utilities": return Color(red: 1.0, green: 0.72, blue: 0.28)
+        default: return Color(white: 0.55)
         }
     }
 }
 
-enum ReportDummyData {
+enum ReportHelper {
     private static let calendar: Calendar = {
         var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = TimeZone(secondsFromGMT: 7 * 3600) ?? .current
+        calendar.timeZone = TimeZone.current
         calendar.firstWeekday = 2
         return calendar
     }()
+    
+    static var defaultDate: Date {
+        Date()
+    }
 
-    static let expenses: [ReportDummyExpense] = [
-        // July 2026 — Shopping dominant
-        ReportDummyExpense(date: date(2026, 7, 5), category: "Shopping", amount: 400_000, title: "Uniqlo"),
-        ReportDummyExpense(date: date(2026, 7, 12), category: "Food & Beverage", amount: 150_000, title: "Nasi Padang Sederhana"),
-        ReportDummyExpense(date: date(2026, 7, 20), category: "Transportation", amount: 100_000, title: "Grab"),
-        ReportDummyExpense(date: date(2026, 7, 28), category: "Shopping", amount: 250_000, title: "Shopee"),
-
-        // August 2026 — Food & Entertainment
-        ReportDummyExpense(date: date(2026, 8, 3), category: "Food & Beverage", amount: 300_000, title: "Joyi Coffee"),
-        ReportDummyExpense(date: date(2026, 8, 10), category: "Entertainment", amount: 200_000, title: "Cinema XXI"),
-        ReportDummyExpense(date: date(2026, 8, 18), category: "Food & Beverage", amount: 250_000, title: "Bakso Pak Kumis"),
-        ReportDummyExpense(date: date(2026, 8, 22), category: "Transportation", amount: 180_000, title: "Shell"),
-        ReportDummyExpense(date: date(2026, 8, 28), category: "Utilities", amount: 120_000, title: "PLN"),
-
-        // September 2026 — 31 Aug-6 Sep
-        ReportDummyExpense(date: date(2026, 9, 2), category: "Food & Beverage", amount: 90_000, title: "Kopi Kenangan"),
-        ReportDummyExpense(date: date(2026, 9, 4), category: "Transportation", amount: 45_000, title: "Gojek"),
-
-        // September 2026 — 7-13 Sep
-        ReportDummyExpense(date: date(2026, 9, 8), category: "Food & Beverage", amount: 80_000, title: "Starbucks"),
-        ReportDummyExpense(date: date(2026, 9, 8), category: "Transportation", amount: 40_000, title: "Parking"),
-        ReportDummyExpense(date: date(2026, 9, 9), category: "Shopping", amount: 150_000, title: "Miniso"),
-        ReportDummyExpense(date: date(2026, 9, 9), category: "Food & Beverage", amount: 50_000, title: "Chatime"),
-        ReportDummyExpense(date: date(2026, 9, 10), category: "Transportation", amount: 200_000, title: "Grab"),
-        ReportDummyExpense(date: date(2026, 9, 10), category: "Food & Beverage", amount: 70_000, title: "McDonald's"),
-        ReportDummyExpense(date: date(2026, 9, 11), category: "Food & Beverage", amount: 400_000, title: "Joyi Coffee"),
-        ReportDummyExpense(date: date(2026, 9, 11), category: "Transportation", amount: 300_000, title: "Grab"),
-        ReportDummyExpense(date: date(2026, 9, 11), category: "Shopping", amount: 200_000, title: "Uniqlo"),
-        ReportDummyExpense(date: date(2026, 9, 12), category: "Shopping", amount: 180_000, title: "H&M"),
-        ReportDummyExpense(date: date(2026, 9, 12), category: "Entertainment", amount: 90_000, title: "Netflix"),
-
-        // September 2026 — 14-20 Sep
-        ReportDummyExpense(date: date(2026, 9, 15), category: "Food & Beverage", amount: 100_000, title: "Warung Tegal"),
-        ReportDummyExpense(date: date(2026, 9, 15), category: "Utilities", amount: 80_000, title: "WiFi"),
-        ReportDummyExpense(date: date(2026, 9, 20), category: "Transportation", amount: 250_000, title: "Bensin Shell"),
-        ReportDummyExpense(date: date(2026, 9, 20), category: "Shopping", amount: 70_000, title: "Alfamart"),
-
-        // September 2026 — 21-27 Sep
-        ReportDummyExpense(date: date(2026, 9, 23), category: "Shopping", amount: 220_000, title: "Shopee"),
-        ReportDummyExpense(date: date(2026, 9, 24), category: "Entertainment", amount: 80_000, title: "Spotify"),
-
-        // September 2026 — 28 Sep-4 Oct
-        ReportDummyExpense(date: date(2026, 9, 29), category: "Food & Beverage", amount: 110_000, title: "Pizza Hut"),
-        ReportDummyExpense(date: date(2026, 9, 30), category: "Utilities", amount: 60_000, title: "PLN")
-    ]
-
-    static let defaultDate = date(2026, 9, 11)
-
-    static var availableMonths: [Date] {
+    static func availableMonths(from expenses: [Expense]) -> [Date] {
         let months = Set(expenses.compactMap { expense in
             calendar.date(from: calendar.dateComponents([.year, .month], from: expense.date))
         })
-        return months.sorted()
+        let sorted = months.sorted()
+        return sorted.isEmpty ? [calendar.date(from: calendar.dateComponents([.year, .month], from: Date()))!] : sorted
     }
 
     static func week(containing date: Date) -> ReportWeek {
@@ -275,17 +206,18 @@ enum ReportDummyData {
         return result
     }
 
-    static func expenses(for date: Date, period: ReportPeriod) -> [ReportDummyExpense] {
+    static func filteredExpenses(from expenses: [Expense], for date: Date, period: ReportPeriod) -> [Expense] {
+        let expensesOnly = expenses.filter { $0.isExpense }
         switch period {
         case .weekly:
             let selectedWeek = week(containing: date)
-            return expenses.filter { isDate($0.date, in: selectedWeek) }
+            return expensesOnly.filter { isDate($0.date, in: selectedWeek) }
         case .monthly:
-            return expenses.filter { calendar.isDate($0.date, equalTo: date, toGranularity: .month) }
+            return expensesOnly.filter { calendar.isDate($0.date, equalTo: date, toGranularity: .month) }
         }
     }
 
-    static func categories(from expenses: [ReportDummyExpense]) -> [ReportCategoryItem] {
+    static func categories(from expenses: [Expense], customCategories: [ExpenseCategory] = []) -> [ReportCategoryItem] {
         let grouped = Dictionary(grouping: expenses, by: \.category)
         let total = expenses.reduce(0) { $0 + $1.amount }
 
@@ -297,14 +229,14 @@ enum ReportDummyData {
                     name: name,
                     amount: amount,
                     sliceWeight: total > 0 ? (amount / total) * 100 : 0,
-                    color: CategoryStyle.color(for: name),
-                    icon: CategoryStyle.icon(for: name)
+                    color: CategoryStyle.color(for: name, customCategories: customCategories),
+                    icon: CategoryStyle.icon(for: name, customCategories: customCategories)
                 )
             }
             .sorted { $0.amount > $1.amount }
     }
 
-    static func stepDate(_ date: Date, by offset: Int, period: ReportPeriod) -> Date? {
+    static func stepDate(_ date: Date, by offset: Int, period: ReportPeriod, allExpenses: [Expense]) -> Date? {
         switch period {
         case .weekly:
             let options = weeks(inMonthOf: date)
@@ -313,22 +245,23 @@ enum ReportDummyData {
             guard options.indices.contains(nextIndex) else { return nil }
             return options[nextIndex].start
         case .monthly:
-            guard let index = availableMonths.firstIndex(where: {
+            let months = availableMonths(from: allExpenses)
+            guard let index = months.firstIndex(where: {
                 calendar.isDate($0, equalTo: date, toGranularity: .month)
             }) else {
                 return nil
             }
             let nextIndex = index + offset
-            guard availableMonths.indices.contains(nextIndex) else { return nil }
-            return availableMonths[nextIndex]
+            guard months.indices.contains(nextIndex) else { return nil }
+            return months[nextIndex]
         }
     }
 
-    static func canStep(_ date: Date, by offset: Int, period: ReportPeriod) -> Bool {
-        stepDate(date, by: offset, period: period) != nil
+    static func canStep(_ date: Date, by offset: Int, period: ReportPeriod, allExpenses: [Expense]) -> Bool {
+        stepDate(date, by: offset, period: period, allExpenses: allExpenses) != nil
     }
 
-    static func nearestAvailableDate(to date: Date, period: ReportPeriod) -> Date {
+    static func nearestAvailableDate(to date: Date, period: ReportPeriod, allExpenses: [Expense]) -> Date {
         switch period {
         case .weekly:
             if let match = weeks(inMonthOf: date).first(where: { isDate(date, in: $0) }) {
@@ -336,12 +269,13 @@ enum ReportDummyData {
             }
             return weeks(inMonthOf: date).first?.start ?? defaultDate
         case .monthly:
-            if availableMonths.contains(where: {
+            let months = availableMonths(from: allExpenses)
+            if months.contains(where: {
                 calendar.isDate($0, equalTo: date, toGranularity: .month)
             }) {
                 return date
             }
-            return availableMonths.last ?? defaultDate
+            return months.last ?? defaultDate
         }
     }
 
@@ -357,9 +291,5 @@ enum ReportDummyData {
         let weekday = calendar.component(.weekday, from: startOfDay)
         let daysFromMonday = (weekday + 5) % 7
         return calendar.date(byAdding: .day, value: -daysFromMonday, to: startOfDay) ?? startOfDay
-    }
-
-    private static func date(_ year: Int, _ month: Int, _ day: Int) -> Date {
-        calendar.date(from: DateComponents(year: year, month: month, day: day, hour: 12)) ?? .now
     }
 }

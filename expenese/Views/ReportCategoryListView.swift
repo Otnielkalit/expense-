@@ -105,9 +105,9 @@ struct ReportCategoryListView: View {
 
 #Preview {
     ReportCategoryListView(
-        categories: ReportDummyData.categories(
-            from: ReportDummyData.expenses(for: ReportDummyData.defaultDate, period: .monthly)
-        )
+        categories: [
+            ReportCategoryItem(id: "Food", name: "Food", amount: 100, sliceWeight: 100, color: .blue, icon: "fork.knife")
+        ]
     )
     .padding()
 }
