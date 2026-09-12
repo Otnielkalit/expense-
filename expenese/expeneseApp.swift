@@ -16,14 +16,15 @@ struct expeneseApp: App {
 
     init() {
         container = try! ModelContainer(
-            for: Expense.self, ExpenseCategory.self,
+            for: Expense.self, Category.self,
             configurations: ModelConfiguration(
                 "expenese",
                 cloudKitDatabase: .automatic
             )
         )
         AppDependencies.shared.container = container
-        
+        CategoryStore.seedDefaultsIfNeeded(context: container.mainContext)
+
         ExpeneseShortcuts.updateAppShortcutParameters()
     }
 

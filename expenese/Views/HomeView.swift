@@ -10,7 +10,7 @@ import SwiftData
 
 struct HomeView: View {
     @Query(sort: \Expense.date, order: .reverse) private var expenses: [Expense]
-    @Query private var customCategories: [ExpenseCategory]
+    @Query private var customCategories: [Category]
     @State private var showSettings = false
     
     // Computed properties for real data

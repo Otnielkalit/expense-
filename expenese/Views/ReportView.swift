@@ -10,7 +10,7 @@ import SwiftData
 
 struct ReportView: View {
     @Query private var expenses: [Expense]
-    @Query private var customCategories: [ExpenseCategory]
+    @Query private var customCategories: [Category]
     
     @State private var period: ReportPeriod = .weekly
     @State private var selectedDate: Date = ReportHelper.defaultDate

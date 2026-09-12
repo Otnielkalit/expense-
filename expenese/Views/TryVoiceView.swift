@@ -10,7 +10,7 @@ import SwiftData
 
 struct TryVoiceView: View {
     @Environment(\.modelContext) private var modelContext
-    @Query private var customCategories: [ExpenseCategory]
+    @Query private var customCategories: [Category]
     
     @StateObject private var audioManager = AudioLevelManager()
     @StateObject private var speechRecognizer = SpeechRecognizer()

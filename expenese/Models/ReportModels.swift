@@ -54,6 +54,18 @@ enum ReportFormat {
         return "Rp \(Int(amount))"
     }
 
+    static func compactRupiah(_ amount: Double) -> String {
+        if amount >= 1_000_000 {
+            let millions = amount / 1_000_000
+            if millions.rounded() == millions {
+                return "Rp \(Int(millions)) M"
+            }
+            let text = String(format: "%.1f", millions)
+            return "Rp \(text) M"
+        }
+        return rupiah(amount)
+    }
+
     static func month(_ date: Date) -> String {
         monthFormatter.string(from: date)
     }
@@ -122,40 +134,17 @@ enum ReportFormat {
 
 enum CategoryStyle {
     static func displayName(for raw: String) -> String {
-        switch raw.lowercased() {
-        case "food", "food & beverage", "food and beverage":
-            return "Food & Beverage"
-        case "transport", "transportation":
-            return "Transportation"
-        case "shopping":
-            return "Shopping"
-        default:
-            return raw
-        }
+        CategoryCatalog.displayName(for: raw)
     }
 
-    static func icon(for name: String, customCategories: [ExpenseCategory] = []) -> String {
+    static func icon(for name: String, customCategories: [Category] = []) -> String {
         if let custom = customCategories.first(where: { $0.name == name }) { return custom.icon }
-        switch name.lowercased() {
-        case "food & beverage", "food": return "fork.knife"
-        case "transportation", "transport": return "car.fill"
-        case "shopping": return "cart.fill"
-        case "entertainment": return "film.fill"
-        case "utilities": return "bolt.fill"
-        default: return "tag.fill"
-        }
+        return CategoryCatalog.icon(for: name)
     }
 
-    static func color(for name: String, customCategories: [ExpenseCategory] = []) -> Color {
+    static func color(for name: String, customCategories: [Category] = []) -> Color {
         if let custom = customCategories.first(where: { $0.name == name }) { return Color(hex: custom.colorHex) }
-        switch name.lowercased() {
-        case "food & beverage", "food": return Color(red: 0.29, green: 0.45, blue: 1.0)
-        case "transportation", "transport": return Color(red: 0.18, green: 0.82, blue: 0.72)
-        case "shopping": return Color(red: 1.0, green: 0.51, blue: 0.45)
-        case "entertainment": return Color(red: 0.62, green: 0.45, blue: 0.98)
-        case "utilities": return Color(red: 1.0, green: 0.72, blue: 0.28)
-        default: return Color(white: 0.55)
-        }
+        return CategoryCatalog.color(for: name)
     }
 }
 
@@ -217,8 +206,8 @@ enum ReportHelper {
         }
     }
 
-    static func categories(from expenses: [Expense], customCategories: [ExpenseCategory] = []) -> [ReportCategoryItem] {
-        let grouped = Dictionary(grouping: expenses, by: \.category)
+    static func categories(from expenses: [Expense], customCategories: [Category] = []) -> [ReportCategoryItem] {
+        let grouped = Dictionary(grouping: expenses, by: { CategoryStyle.displayName(for: $0.category) })
         let total = expenses.reduce(0) { $0 + $1.amount }
 
         return grouped

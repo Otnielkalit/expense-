@@ -21,7 +21,7 @@ struct AddExpenseIntent: AppIntent {
             var categories: [String] = []
             if let container = AppDependencies.shared.container {
                 let context = ModelContext(container)
-                let descriptor = FetchDescriptor<ExpenseCategory>()
+                let descriptor = FetchDescriptor<Category>()
                 if let fetched = try? context.fetch(descriptor) {
                     categories = fetched.map { $0.name }
                 }

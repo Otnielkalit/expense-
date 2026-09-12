@@ -13,6 +13,11 @@ struct ReportCategoryListView: View {
 
     @State private var showAllCategories = false
 
+    private let navy = Color(red: 0.16, green: 0.17, blue: 0.24)
+    private let amountColor = Color(red: 0.78, green: 0.40, blue: 0.40)
+    private let rowBackground = Color(red: 0.94, green: 0.94, blue: 0.97)
+    private let showMoreColor = Color(red: 0.25, green: 0.52, blue: 1.0)
+
     private var visibleCategories: [ReportCategoryItem] {
         if showAllCategories || categories.count <= previewLimit {
             return categories
@@ -20,34 +25,36 @@ struct ReportCategoryListView: View {
         return Array(categories.prefix(previewLimit))
     }
 
-    private var totalAmount: Double {
-        categories.reduce(0) { $0 + $1.amount }
-    }
-
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 14) {
             header
             categoryRows
             if categories.count > previewLimit {
-                seeMoreButton
+                showMoreButton
             }
         }
     }
 
     private var header: some View {
-        HStack {
-            Text("All Category")
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(.black)
+        HStack(spacing: 8) {
+            Text("Category")
+                .font(.system(size: 20, weight: .bold))
+                .foregroundColor(navy)
 
             Spacer()
 
-            (Text("Total ")
-                .fontWeight(.regular)
-            + Text(ReportFormat.rupiah(totalAmount))
-                .fontWeight(.bold))
-            .font(.system(size: 16))
-            .foregroundColor(.black)
+            NavigationLink {
+                CategoryView()
+            } label: {
+                Image(systemName: "plus")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(showMoreColor)
+                    .frame(width: 32, height: 32)
+                    .background(showMoreColor.opacity(0.12))
+                    .clipShape(Circle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Add Category")
         }
         .padding(.top, 8)
     }
@@ -61,31 +68,32 @@ struct ReportCategoryListView: View {
     }
 
     private func categoryRow(_ item: ReportCategoryItem) -> some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 14) {
             Image(systemName: item.icon)
                 .font(.system(size: 15, weight: .semibold))
                 .foregroundColor(.white)
-                .frame(width: 34, height: 34)
-                .background(Color.white.opacity(0.18))
-                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .frame(width: 36, height: 36)
+                .background(item.color)
+                .clipShape(Circle())
 
             Text(item.name)
                 .font(.system(size: 16, weight: .medium))
-                .foregroundColor(.white)
+                .foregroundColor(navy)
+                .lineLimit(1)
 
-            Spacer()
+            Spacer(minLength: 8)
 
-            Text(item.formattedAmount)
+            Text(ReportFormat.compactRupiah(item.amount))
                 .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(.white)
+                .foregroundColor(amountColor)
         }
         .padding(.horizontal, 14)
-        .padding(.vertical, 12)
-        .background(Color(white: 0.38))
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .padding(.vertical, 10)
+        .background(rowBackground)
+        .clipShape(Capsule())
     }
 
-    private var seeMoreButton: some View {
+    private var showMoreButton: some View {
         HStack {
             Spacer()
             Button {
@@ -93,9 +101,9 @@ struct ReportCategoryListView: View {
                     showAllCategories.toggle()
                 }
             } label: {
-                Text(showAllCategories ? "See Less" : "See More")
+                Text(showAllCategories ? "Show Less" : "Show More")
                     .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(Color(red: 0.25, green: 0.48, blue: 1.0))
+                    .foregroundColor(showMoreColor)
             }
             .buttonStyle(.plain)
         }

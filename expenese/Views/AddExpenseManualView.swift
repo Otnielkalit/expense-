@@ -5,13 +5,14 @@
 //  Created by otnielkalit on 11/09/26.
 //
 
+import SwiftData
 import SwiftUI
 import SwiftData
 
 struct AddExpenseManualView: View {
     @Environment(\.modelContext) private var modelContext
-    @Query private var customCategories: [ExpenseCategory]
     @Environment(\.dismiss) var dismiss
+    @Query(sort: \Category.sortOrder) private var categories: [Category]
     @State private var amountText: String = ""
     @State private var descriptionText: String = ""
     @State private var selectedCategory: String = "Food & Beverage"
@@ -89,19 +90,9 @@ struct AddExpenseManualView: View {
                                         .font(.system(size: 16, weight: .bold))
                                     
                                     Menu {
-                                        Button(action: { selectedCategory = "Food & Beverage" }) {
-                                            Label("Food & Beverage", systemImage: "fork.knife")
-                                        }
-                                        Button(action: { selectedCategory = "Transportation" }) {
-                                            Label("Transportation", systemImage: "car.fill")
-                                        }
-                                        Button(action: { selectedCategory = "Utilities" }) {
-                                            Label("Utilities", systemImage: "house.fill")
-                                        }
-                                        Divider()
-                                        ForEach(customCategories, id: \.self) { cat in
-                                            Button(action: { selectedCategory = cat.name }) {
-                                                Label(cat.name, systemImage: cat.icon)
+                                        ForEach(categories) { category in
+                                            Button(action: { selectedCategory = category.name }) {
+                                                Label(category.name, systemImage: category.icon)
                                             }
                                         }
                                         Divider()
@@ -109,7 +100,11 @@ struct AddExpenseManualView: View {
                                             Label("Add Category", systemImage: "plus")
                                         }
                                     } label: {
-                                        pickerLabel(icon: getCategoryIcon(selectedCategory), iconBg: getCategoryColor(selectedCategory), text: selectedCategory)
+                                        pickerLabel(
+                                            icon: CategoryCatalog.icon(for: selectedCategory, in: categories),
+                                            iconBg: CategoryCatalog.color(for: selectedCategory, in: categories),
+                                            text: selectedCategory
+                                        )
                                     }
                                 }
                             }
@@ -198,10 +193,24 @@ struct AddExpenseManualView: View {
             }
         }
         .navigationBarHidden(true)
-        .sheet(isPresented: $showAddCategoryModal) {
-            AddCategoryView()
-                .presentationDetents([.large])
-                .presentationDragIndicator(.visible)
+        .sheet(isPresented: $showDatePicker) {
+            VStack {
+                DatePicker("Select Date", selection: $selectedDate, displayedComponents: [.date])
+                    .datePickerStyle(GraphicalDatePickerStyle())
+                    .padding()
+                Spacer()
+            }
+            .presentationDetents([.medium])
+            .presentationDragIndicator(.visible)
+        }
+        .addCategorySheet(isPresented: $showAddCategoryModal) { category in
+            selectedCategory = category.name
+        }
+        .onAppear {
+            if CategoryCatalog.find(selectedCategory, in: categories) == nil,
+               let first = categories.first {
+                selectedCategory = first.name
+            }
         }
     }
     
@@ -266,31 +275,6 @@ struct AddExpenseManualView: View {
         .background(Color(.tertiarySystemGroupedBackground))
         .cornerRadius(30)
     }
-    
-    private func getCategoryIcon(_ category: String) -> String {
-        if let custom = customCategories.first(where: { $0.name == category }) {
-            return custom.icon
-        }
-        switch category {
-        case "Food & Beverage": return "fork.knife"
-        case "Transportation": return "car.fill"
-        case "Utilities": return "house.fill"
-        default: return "tag.fill"
-        }
-    }
-    
-    private func getCategoryColor(_ category: String) -> Color {
-        if let custom = customCategories.first(where: { $0.name == category }) {
-            return Color(hex: custom.colorHex)
-        }
-        switch category {
-        case "Food & Beverage": return .yellow
-        case "Transportation": return Theme.expenseRed
-        case "Utilities": return Theme.incomePurple
-        default: return .gray
-        }
-    }
-    
     private func formatHeaderDate(_ date: Date) -> AttributedString {
         let formatter = DateFormatter()
         formatter.dateFormat = "dd MMMM yyyy"

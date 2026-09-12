@@ -69,7 +69,7 @@ struct SettingsView: View {
     private func clearAllData() {
         do {
             try modelContext.delete(model: Expense.self)
-            try modelContext.delete(model: ExpenseCategory.self)
+            try modelContext.delete(model: Category.self)
             try modelContext.save()
         } catch {
             print("Failed to clear data: \(error.localizedDescription)")
