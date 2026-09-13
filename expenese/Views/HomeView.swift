@@ -39,7 +39,8 @@ struct HomeView: View {
     }
     
     var body: some View {
-        ZStack(alignment: .top) {
+        NavigationStack {
+            ZStack(alignment: .top) {
             Theme.bgApp.ignoresSafeArea()
             
             ScrollView(.vertical, showsIndicators: false) {
@@ -58,6 +59,7 @@ struct HomeView: View {
         }
         .sheet(isPresented: $showSettings) {
             SettingsView()
+        }
         }
     }
 }
@@ -195,12 +197,12 @@ extension HomeView {
                         
                         Divider().padding(.leading, 50)
                         
-                        Button("Show more") {
-                            // Action
+                        NavigationLink(destination: HistoryView()) {
+                            Text("Show more")
+                                .font(.system(size: 14, weight: .medium, design: .rounded))
+                                .foregroundColor(.blue)
+                                .padding(.vertical, 12)
                         }
-                        .font(.system(size: 14, weight: .medium, design: .rounded))
-                        .foregroundColor(.blue)
-                        .padding(.vertical, 12)
                     }
                 }
                 .background(Theme.cardWhite)
@@ -372,3 +374,6 @@ extension HomeView {
         return CategoryStyle.color(for: name)
     }
 }
+
+
+
