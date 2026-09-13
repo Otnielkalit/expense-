@@ -124,7 +124,11 @@ struct AddCategoryView: View {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 16) {
                         ForEach(iconOptions, id: \.self) { icon in
-                            Button(action: { selectedIcon = icon }) {
+                            Button(action: {
+                                guard selectedIcon != icon else { return }
+                                selectedIcon = icon
+                                AppHaptic.selection()
+                            }) {
                                 Image(systemName: icon)
                                     .font(.system(size: 24))
                                     .foregroundColor(selectedIcon == icon ? .white : .gray)
@@ -146,7 +150,11 @@ struct AddCategoryView: View {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 16) {
                         ForEach(colorOptions, id: \.hex) { item in
-                            Button(action: { selectedColorHex = item.hex }) {
+                            Button(action: {
+                                guard selectedColorHex != item.hex else { return }
+                                selectedColorHex = item.hex
+                                AppHaptic.selection()
+                            }) {
                                 Circle()
                                     .fill(item.color)
                                     .frame(width: 40, height: 40)
@@ -189,6 +197,7 @@ struct AddCategoryView: View {
         if let existing = CategoryStore.categoryNamed(trimmedName, in: context),
            existing.persistentModelID != categoryToEdit?.persistentModelID {
             errorMessage = "A category named \"\(trimmedName)\" already exists."
+            AppHaptic.error()
             return
         }
 
@@ -202,6 +211,7 @@ struct AddCategoryView: View {
             )
             try? context.save()
             onCreated?(category)
+            AppHaptic.success()
             dismiss()
             return
         }
@@ -216,6 +226,7 @@ struct AddCategoryView: View {
         context.insert(category)
         try? context.save()
         onCreated?(category)
+        AppHaptic.success()
         dismiss()
     }
 }

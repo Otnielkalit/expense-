@@ -24,18 +24,19 @@ struct ContentView: View {
                     .tabItem {
                         Label("Home", systemImage: "house.fill")
                     }
-                    .tag(0)
+                    .tag(AppTab.home)
                 TryVoiceView()
                     .tabItem {
                         Label("Input", systemImage: "plus")
                     }
-                    .tag(1)
+                    .tag(AppTab.input)
                 ReportView()
                     .tabItem {
                         Label("Report", systemImage: "chart.pie.fill")
                     }
-                    .tag(2)
+                    .tag(AppTab.report)
             }
+            .sensoryFeedback(.selection, trigger: selectedTab)
             .onOpenURL { url in
                 handle(url)
             }

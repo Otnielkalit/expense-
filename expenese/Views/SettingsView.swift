@@ -22,6 +22,7 @@ struct SettingsView: View {
                     Button(action: {
                         showSyncSuccess = true
                         try? modelContext.save()
+                        AppHaptic.success()
                     }) {
                         HStack {
                             Image(systemName: "arrow.triangle.2.circlepath.icloud.fill")
@@ -59,6 +60,7 @@ struct SettingsView: View {
                 Button("Cancel", role: .cancel) { }
                 Button("Delete", role: .destructive) {
                     clearAllData()
+                    AppHaptic.rigid()
                 }
             } message: {
                 Text("Are you sure you want to delete all expenses and custom categories? This action cannot be undone.")

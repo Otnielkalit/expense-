@@ -17,6 +17,8 @@ struct TryVoiceView: View {
     @State private var isRecording = false
     @State private var showManual = false
     @State private var draftPayload: DraftPayload?
+    @State private var voiceHaptic = HapticPulse()
+    @State private var voiceAccessAlert: VoiceAccessAlert?
     
     var body: some View {
         VStack(spacing: 0) {
@@ -28,14 +30,10 @@ struct TryVoiceView: View {
             Spacer()
             Button(action: {
                 withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) {
-                    isRecording.toggle()
                     if isRecording {
-                        audioManager.startMonitoring()
-                        speechRecognizer.startTranscribing()
+                        stopRecording()
                     } else {
-                        audioManager.stopMonitoring()
-                        speechRecognizer.stopTranscribing()
-                        processSpeech(speechRecognizer.transcript)
+                        startRecording()
                     }
                 }
             }) {
@@ -106,11 +104,82 @@ struct TryVoiceView: View {
         .sheet(item: $draftPayload) { payload in
             EditExpenseView(drafts: payload.items)
         }
+        .hapticPulse(voiceHaptic)
+        .alert(
+            voiceAccessAlert?.title ?? "Voice Recognition Is Off",
+            isPresented: Binding(
+                get: { voiceAccessAlert != nil },
+                set: { if !$0 { voiceAccessAlert = nil } }
+            )
+        ) {
+            Button("Open Settings") {
+                VoiceAccessAlert.openSettings()
+            }
+            Button("Not Now", role: .cancel) {}
+        } message: {
+            Text(voiceAccessAlert?.message ?? "")
+        }
+        .onChange(of: speechRecognizer.isRecording) { _, recording in
+            if recording {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) {
+                    isRecording = true
+                }
+                voiceHaptic.play(.start)
+            }
+        }
+        .onChange(of: speechRecognizer.accessAlert) { _, alert in
+            guard let alert else { return }
+            resetIdleState()
+            showAccessAlert(alert)
+            speechRecognizer.accessAlert = nil
+        }
+        .onChange(of: speechRecognizer.startFailed) { _, failed in
+            guard failed else { return }
+            resetIdleState()
+            voiceHaptic.play(.error)
+            speechRecognizer.startFailed = false
+        }
         .onDisappear {
             audioManager.stopMonitoring()
             speechRecognizer.stopTranscribing()
             isRecording = false
         }
+    }
+
+    private func startRecording() {
+        if let alert = SpeechRecognizer.accessAlertIfBlocked() {
+            showAccessAlert(alert)
+            return
+        }
+
+        audioManager.startMonitoring()
+        speechRecognizer.startTranscribing()
+    }
+
+    private func showAccessAlert(_ alert: VoiceAccessAlert) {
+        voiceAccessAlert = alert
+        voiceHaptic.play(.warning)
+    }
+
+    private func resetIdleState() {
+        isRecording = false
+        audioManager.stopMonitoring()
+        speechRecognizer.stopTranscribing()
+    }
+
+    private func stopRecording() {
+        audioManager.stopMonitoring()
+        speechRecognizer.stopTranscribing()
+        isRecording = false
+
+        let text = speechRecognizer.transcript.trimmingCharacters(in: .whitespacesAndNewlines)
+        if text.isEmpty {
+            voiceHaptic.play(.warning)
+            return
+        }
+
+        voiceHaptic.play(.stop)
+        processSpeech(text)
     }
     
     private func processSpeech(_ text: String) {

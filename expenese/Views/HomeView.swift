@@ -249,6 +249,7 @@ extension HomeView {
                     Button(action: {
                         if let prev = Calendar.current.date(byAdding: .month, value: -1, to: selectedMonth) {
                             selectedMonth = prev
+                            AppHaptic.selection()
                         }
                     }) {
                         Image(systemName: "chevron.left")
@@ -259,6 +260,7 @@ extension HomeView {
                     Button(action: {
                         if let next = Calendar.current.date(byAdding: .month, value: 1, to: selectedMonth) {
                             selectedMonth = next
+                            AppHaptic.selection()
                         }
                     }) {
                         Image(systemName: "chevron.right")
@@ -290,6 +292,7 @@ extension HomeView {
                     Button(action: {
                         if let clickedDate = Calendar.current.date(bySetting: .day, value: date, of: selectedMonth) {
                             selectedDayDate = clickedDate
+                            AppHaptic.selection()
                         }
                     }) {
                         VStack(spacing: 4) {

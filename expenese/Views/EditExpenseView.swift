@@ -54,6 +54,7 @@ struct EditExpenseView: View {
             context.insert(expense)
         }
         try? context.save()
+        AppHaptic.success()
         dismiss()
     }
 }

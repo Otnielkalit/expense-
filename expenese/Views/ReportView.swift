@@ -77,9 +77,11 @@ private extension ReportView {
         HStack(spacing: 0) {
             ForEach(ReportPeriod.allCases) { item in
                 Button {
+                    guard period != item else { return }
                     withAnimation(.easeInOut(duration: 0.25)) {
                         period = item
                     }
+                    AppHaptic.selection()
                 } label: {
                     Text(item.rawValue)
                         .font(.system(size: 15, weight: .medium))

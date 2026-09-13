@@ -189,6 +189,7 @@ struct AddExpenseManualView: View {
                             }
                             
                             try? modelContext.save()
+                            AppHaptic.success()
                             dismiss()
                         }) {
                             Text("Save Record")
@@ -253,10 +254,18 @@ struct AddExpenseManualView: View {
             Spacer()
             
             Menu {
-                Button(role: .destructive, action: { isExpense = true }) {
+                Button(role: .destructive, action: {
+                    guard isExpense != true else { return }
+                    isExpense = true
+                    AppHaptic.mediumImpact()
+                }) {
                     Label("Expenses", systemImage: "arrow.up.right")
                 }
-                Button(action: { isExpense = false }) {
+                Button(action: {
+                    guard isExpense != false else { return }
+                    isExpense = false
+                    AppHaptic.mediumImpact()
+                }) {
                     Label("Income", systemImage: "arrow.down.left")
                 }
             } label: {
