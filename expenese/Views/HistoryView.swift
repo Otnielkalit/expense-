@@ -12,6 +12,8 @@ struct HistoryView: View {
     @Query(sort: \Expense.date, order: .reverse) private var expenses: [Expense]
     @Query private var customCategories: [Category]
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
+    @State private var expenseToEdit: Expense?
 
     var groupedExpenses: [(Date, [Expense])] {
         let calendar = Calendar.current
@@ -31,42 +33,59 @@ struct HistoryView: View {
         ZStack(alignment: .top) {
             Theme.bgApp.ignoresSafeArea()
 
-            ScrollView(.vertical, showsIndicators: false) {
-                VStack(spacing: 24) {
-                    ForEach(groupedExpenses, id: \.0) { date, dailyExpenses in
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text(headerDateFormatter.string(from: date))
-                                .font(.system(size: 16, weight: .regular, design: .rounded))
-                                .foregroundColor(Theme.textDark)
-                                .padding(.horizontal, 24)
-
-                            VStack(spacing: 0) {
-                                ForEach(Array(dailyExpenses.enumerated()), id: \.element.id) { index, expense in
-                                    transactionRow(
-                                        icon: getCategoryIcon(expense.category),
-                                        color: getCategoryColor(expense.category),
-                                        name: expense.desc.isEmpty ? expense.category : expense.desc,
-                                        amount: (expense.isExpense ? "-" : "+") + ReportFormat.rupiah(expense.amount),
-                                        isExpense: expense.isExpense
-                                    )
-                                    if index < dailyExpenses.count - 1 {
-                                        Divider().padding(.horizontal, 16)
-                                    }
+            List {
+                ForEach(groupedExpenses, id: \.0) { date, dailyExpenses in
+                    Section {
+                        ForEach(dailyExpenses, id: \.id) { expense in
+                            Button(action: {
+                                expenseToEdit = expense
+                            }) {
+                                transactionRow(
+                                    icon: getCategoryIcon(expense.category),
+                                    color: getCategoryColor(expense.category),
+                                    name: expense.desc.isEmpty ? expense.category : expense.desc,
+                                    amount: (expense.isExpense ? "-" : "+") + ReportFormat.rupiah(expense.amount),
+                                    isExpense: expense.isExpense
+                                )
+                            }
+                            .buttonStyle(.plain)
+                            .listRowInsets(EdgeInsets()) // use our custom padding inside transactionRow
+                            .listRowBackground(Theme.cardWhite)
+                            .swipeActions(edge: .trailing) {
+                                Button(role: .destructive) {
+                                    deleteExpense(expense)
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
                                 }
                             }
-                            .background(Theme.cardWhite)
-                            .cornerRadius(20)
-                            .shadow(color: .gray.opacity(0.05), radius: 10, y: 5)
-                            .padding(.horizontal, 24)
                         }
+                    } header: {
+                        Text(headerDateFormatter.string(from: date))
+                            .font(.system(size: 16, weight: .regular, design: .rounded))
+                            .foregroundColor(Theme.textDark)
+                            .textCase(nil)
+                            .padding(.leading, -16) // offset default List inset slightly
+                            .padding(.bottom, 4)
                     }
                 }
-                .padding(.top, 24)
-                .padding(.bottom, 100)
+            }
+            .listStyle(.insetGrouped)
+            .scrollContentBackground(.hidden)
+            .padding(.bottom, 100)
+            .sheet(item: Binding(
+                get: { expenseToEdit },
+                set: { expenseToEdit = $0 }
+            )) { expense in
+                AddExpenseManualView(expenseToEdit: expense)
             }
         }
         .navigationTitle("Record")
         .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private func deleteExpense(_ expense: Expense) {
+        modelContext.delete(expense)
+        try? modelContext.save()
     }
 
     private func transactionRow(icon: String, color: Color, name: String, amount: String, isExpense: Bool = true) -> some View {

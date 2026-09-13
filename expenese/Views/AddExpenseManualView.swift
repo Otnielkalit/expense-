@@ -22,6 +22,8 @@ struct AddExpenseManualView: View {
     @State private var selectedDate = Date()
     @State private var showAddCategoryModal = false
     
+    var expenseToEdit: Expense?
+    
     var body: some View {
         ZStack {
             Color(.systemGroupedBackground).ignoresSafeArea()
@@ -163,17 +165,29 @@ struct AddExpenseManualView: View {
                             
                             let categoryToSave = isExpense ? selectedCategory : "Income"
                             
-                            let newExpense = Expense(
-                                amount: amountDouble,
-                                category: categoryToSave,
-                                paymentMethod: selectedMethod,
-                                paymentType: .cash,
-                                desc: descriptionText,
-                                date: selectedDate,
-                                isExpense: isExpense
-                            )
+                            if let expenseToEdit = expenseToEdit {
+                                // Update existing
+                                expenseToEdit.amount = amountDouble
+                                expenseToEdit.category = categoryToSave
+                                expenseToEdit.paymentMethod = selectedMethod
+                                expenseToEdit.paymentType = .cash
+                                expenseToEdit.desc = descriptionText
+                                expenseToEdit.date = selectedDate
+                                expenseToEdit.isExpense = isExpense
+                            } else {
+                                // Insert new
+                                let newExpense = Expense(
+                                    amount: amountDouble,
+                                    category: categoryToSave,
+                                    paymentMethod: selectedMethod,
+                                    paymentType: .cash,
+                                    desc: descriptionText,
+                                    date: selectedDate,
+                                    isExpense: isExpense
+                                )
+                                modelContext.insert(newExpense)
+                            }
                             
-                            modelContext.insert(newExpense)
                             try? modelContext.save()
                             dismiss()
                         }) {
@@ -207,9 +221,19 @@ struct AddExpenseManualView: View {
             selectedCategory = category.name
         }
         .onAppear {
-            if CategoryCatalog.find(selectedCategory, in: categories) == nil,
-               let first = categories.first {
-                selectedCategory = first.name
+            if let expense = expenseToEdit {
+                let amountStr = String(format: "%.0f", expense.amount)
+                amountText = amountStr
+                descriptionText = expense.desc
+                selectedCategory = expense.category
+                selectedMethod = expense.paymentMethod
+                isExpense = expense.isExpense
+                selectedDate = expense.date
+            } else {
+                if CategoryCatalog.find(selectedCategory, in: categories) == nil,
+                   let first = categories.first {
+                    selectedCategory = first.name
+                }
             }
         }
     }
@@ -220,7 +244,7 @@ struct AddExpenseManualView: View {
                 HStack(spacing: 4) {
                     Image(systemName: "chevron.left")
                         .font(.system(size: 20, weight: .bold))
-                    Text("Record")
+                    Text(expenseToEdit != nil ? "Edit Record" : "Record")
                         .font(.system(size: 24, weight: .bold))
                 }
                 .foregroundColor(Theme.textDark)
