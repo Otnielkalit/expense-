@@ -12,13 +12,19 @@ struct HomeView: View {
     @Query(sort: \Expense.date, order: .reverse) private var expenses: [Expense]
     @Query private var customCategories: [Category]
     @State private var showSettings = false
+    @State private var selectedMonth = Date()
     
     // Computed properties for real data
+    private var currentMonthExpenses: [Expense] {
+        let calendar = Calendar.current
+        return expenses.filter { calendar.isDate($0.date, equalTo: selectedMonth, toGranularity: .month) }
+    }
+    
     private var totalExpense: Double {
-        expenses.filter { $0.isExpense }.reduce(0) { $0 + $1.amount }
+        currentMonthExpenses.filter { $0.isExpense }.reduce(0) { $0 + $1.amount }
     }
     private var totalIncome: Double {
-        expenses.filter { !$0.isExpense }.reduce(0) { $0 + $1.amount }
+        currentMonthExpenses.filter { !$0.isExpense }.reduce(0) { $0 + $1.amount }
     }
     private var balance: Double {
         totalIncome - totalExpense
@@ -26,10 +32,9 @@ struct HomeView: View {
     
     private func expensesForDay(_ day: Int) -> Double {
         let calendar = Calendar.current
-        return expenses.filter { 
+        return currentMonthExpenses.filter { 
             $0.isExpense && 
-            calendar.component(.day, from: $0.date) == day &&
-            calendar.isDate($0.date, equalTo: Date(), toGranularity: .month) // Only current month
+            calendar.component(.day, from: $0.date) == day
         }.reduce(0) { $0 + $1.amount }
     }
     
@@ -67,17 +72,29 @@ extension HomeView {
             HStack {
                 Spacer()
                 
-                HStack {
-                    Text("April")
-                        .font(.system(size: 16, weight: .semibold, design: .rounded))
-                    Image(systemName: "chevron.down")
-                        .font(.system(size: 14))
+                Menu {
+                    ForEach(-5...0, id: \.self) { offset in
+                        if let monthDate = Calendar.current.date(byAdding: .month, value: offset, to: Date()) {
+                            Button(ReportFormat.month(monthDate)) {
+                                selectedMonth = monthDate
+                            }
+                        }
+                    }
+                } label: {
+                    HStack {
+                        Text(ReportFormat.month(selectedMonth))
+                            .font(.system(size: 16, weight: .semibold, design: .rounded))
+                            .foregroundColor(Theme.textDark)
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 14))
+                            .foregroundColor(Theme.textDark)
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 10)
+                    .background(Theme.cardWhite)
+                    .clipShape(Capsule())
+                    .shadow(color: .gray.opacity(0.1), radius: 5, y: 2)
                 }
-                .padding(.horizontal, 24)
-                .padding(.vertical, 10)
-                .background(Theme.cardWhite)
-                .clipShape(Capsule())
-                .shadow(color: .gray.opacity(0.1), radius: 5, y: 2)
                 
                 Spacer()
                 
@@ -150,13 +167,19 @@ extension HomeView {
                 
                 // List Transaksi bergaya Card Putih bersatu
                 VStack(spacing: 0) {
-                    if expenses.isEmpty {
-                        Text("No records found.")
-                            .font(.system(size: 14, design: .rounded))
-                            .foregroundColor(.gray)
-                            .padding(.vertical, 24)
+                    if currentMonthExpenses.isEmpty {
+                        VStack(spacing: 8) {
+                            Image(systemName: "tray")
+                                .font(.system(size: 30))
+                                .foregroundColor(.gray.opacity(0.5))
+                            Text("No records found.")
+                                .font(.system(size: 14, design: .rounded))
+                                .foregroundColor(.gray)
+                        }
+                        .padding(.vertical, 32)
+                        .frame(maxWidth: .infinity)
                     } else {
-                        ForEach(Array(expenses.prefix(3).enumerated()), id: \.element.id) { index, expense in
+                        ForEach(Array(currentMonthExpenses.prefix(3).enumerated()), id: \.element.id) { index, expense in
                             transactionRow(
                                 icon: getCategoryIcon(expense.category),
                                 color: getCategoryColor(expense.category),
@@ -165,18 +188,20 @@ extension HomeView {
                                 date: ReportFormat.day(expense.date),
                                 isExpense: expense.isExpense
                             )
-                            if index < min(expenses.count, 3) - 1 {
+                            if index < min(currentMonthExpenses.count, 3) - 1 {
                                 Divider().padding(.leading, 50)
                             }
                         }
+                        
+                        Divider().padding(.leading, 50)
+                        
+                        Button("Show more") {
+                            // Action
+                        }
+                        .font(.system(size: 14, weight: .medium, design: .rounded))
+                        .foregroundColor(.blue)
+                        .padding(.vertical, 12)
                     }
-                    
-                    Button("Show more") {
-                        // Action
-                    }
-                    .font(.system(size: 14, design: .rounded))
-                    .foregroundColor(.blue)
-                    .padding(.vertical, 12)
                 }
                 .background(Theme.cardWhite)
                 .cornerRadius(20)
@@ -192,7 +217,7 @@ extension HomeView {
             
             // Header Kalender (Bulan & Tombol Panah)
             HStack {
-                Text(ReportFormat.month(Date()))
+                Text(ReportFormat.month(selectedMonth))
                     .font(.system(size: 18, weight: .bold, design: .rounded))
                     .foregroundColor(Theme.textDark)
                 Image(systemName: "chevron.right")
@@ -202,12 +227,25 @@ extension HomeView {
                 Spacer()
                 
                 HStack(spacing: 24) {
-                    Image(systemName: "chevron.left")
-                        .foregroundColor(.blue)
-                        .font(.system(size: 18, weight: .medium))
-                    Image(systemName: "chevron.right")
-                        .foregroundColor(.blue)
-                        .font(.system(size: 18, weight: .medium))
+                    Button(action: {
+                        if let prev = Calendar.current.date(byAdding: .month, value: -1, to: selectedMonth) {
+                            selectedMonth = prev
+                        }
+                    }) {
+                        Image(systemName: "chevron.left")
+                            .foregroundColor(.blue)
+                            .font(.system(size: 18, weight: .medium))
+                    }
+                    
+                    Button(action: {
+                        if let next = Calendar.current.date(byAdding: .month, value: 1, to: selectedMonth) {
+                            selectedMonth = next
+                        }
+                    }) {
+                        Image(systemName: "chevron.right")
+                            .foregroundColor(.blue)
+                            .font(.system(size: 18, weight: .medium))
+                    }
                 }
             }
             
@@ -243,8 +281,8 @@ extension HomeView {
                             Text(ReportFormat.rupiah(dayTotal))
                                 .font(.system(size: 10, weight: .bold, design: .rounded))
                                 .foregroundColor(Theme.expenseRed)
-                        } else if date == Calendar.current.component(.day, from: Date()) {
-                            // Hari Ini (Today) tapi tidak ada pengeluaran
+                        } else if date == Calendar.current.component(.day, from: Date()) && Calendar.current.isDate(selectedMonth, equalTo: Date(), toGranularity: .month) {
+                            // Hari Ini (Today) tapi tidak ada pengeluaran, HANYA ditandai jika bulannya adalah bulan ini
                             Text("\(date)")
                                 .font(.system(size: 16, weight: .bold, design: .rounded))
                                 .foregroundColor(.white)
