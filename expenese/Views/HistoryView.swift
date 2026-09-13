@@ -65,7 +65,7 @@ struct HistoryView: View {
                 .padding(.bottom, 100)
             }
         }
-        .navigationTitle("")
+        .navigationTitle("Record")
         .navigationBarTitleDisplayMode(.inline)
     }
 

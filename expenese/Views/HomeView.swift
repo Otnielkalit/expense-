@@ -13,6 +13,7 @@ struct HomeView: View {
     @Query private var customCategories: [Category]
     @State private var showSettings = false
     @State private var selectedMonth = Date()
+    @State private var selectedDayDate: Date? = nil
     
     // Computed properties for real data
     private var currentMonthExpenses: [Expense] {
@@ -60,7 +61,23 @@ struct HomeView: View {
         .sheet(isPresented: $showSettings) {
             SettingsView()
         }
+        .sheet(item: Binding<Date?>(
+            get: { selectedDayDate },
+            set: { selectedDayDate = $0 }
+        )) { date in
+            DailyExpenseSheet(
+                date: date,
+                expenses: currentMonthExpenses.filter { Calendar.current.isDate($0.date, inSameDayAs: date) },
+                customCategories: customCategories
+            )
         }
+        }
+    }
+}
+
+extension Date: Identifiable {
+    public var id: TimeInterval {
+        self.timeIntervalSince1970
     }
 }
 
@@ -270,37 +287,43 @@ extension HomeView {
                 // Cetak Tanggal 1 s/d 30
                 ForEach(1...30, id: \.self) { date in
                     let dayTotal = expensesForDay(date)
-                    VStack(spacing: 4) {
-                        if dayTotal > 0 {
-                            // Ada Pengeluaran di Hari Ini
-                            Text("\(date)")
-                                .font(.system(size: 16, weight: .bold, design: .rounded))
-                                .foregroundColor(.blue)
-                                .frame(width: 34, height: 34)
-                                .background(Color.blue.opacity(0.15))
-                                .clipShape(Circle())
-                            
-                            Text(ReportFormat.rupiah(dayTotal))
-                                .font(.system(size: 10, weight: .bold, design: .rounded))
-                                .foregroundColor(Theme.expenseRed)
-                        } else if date == Calendar.current.component(.day, from: Date()) && Calendar.current.isDate(selectedMonth, equalTo: Date(), toGranularity: .month) {
-                            // Hari Ini (Today) tapi tidak ada pengeluaran, HANYA ditandai jika bulannya adalah bulan ini
-                            Text("\(date)")
-                                .font(.system(size: 16, weight: .bold, design: .rounded))
-                                .foregroundColor(.white)
-                                .frame(width: 34, height: 34)
-                                .background(Color.blue)
-                                .clipShape(Circle())
-                            
-                            Text("").font(.system(size: 10))
-                        } else {
-                            // Tanggal Biasa
-                            Text("\(date)")
-                                .font(.system(size: 16, weight: .medium, design: .rounded))
-                                .foregroundColor(Theme.textDark)
-                                .frame(width: 34, height: 34)
-                            
-                            Text("").font(.system(size: 10)) // Ruang kosong agar sejajar
+                    Button(action: {
+                        if let clickedDate = Calendar.current.date(bySetting: .day, value: date, of: selectedMonth) {
+                            selectedDayDate = clickedDate
+                        }
+                    }) {
+                        VStack(spacing: 4) {
+                            if dayTotal > 0 {
+                                // Ada Pengeluaran di Hari Ini
+                                Text("\(date)")
+                                    .font(.system(size: 16, weight: .bold, design: .rounded))
+                                    .foregroundColor(.blue)
+                                    .frame(width: 34, height: 34)
+                                    .background(Color.blue.opacity(0.15))
+                                    .clipShape(Circle())
+                                
+                                Text(ReportFormat.rupiah(dayTotal))
+                                    .font(.system(size: 10, weight: .bold, design: .rounded))
+                                    .foregroundColor(Theme.expenseRed)
+                            } else if date == Calendar.current.component(.day, from: Date()) && Calendar.current.isDate(selectedMonth, equalTo: Date(), toGranularity: .month) {
+                                // Hari Ini (Today) tapi tidak ada pengeluaran, HANYA ditandai jika bulannya adalah bulan ini
+                                Text("\(date)")
+                                    .font(.system(size: 16, weight: .bold, design: .rounded))
+                                    .foregroundColor(.white)
+                                    .frame(width: 34, height: 34)
+                                    .background(Color.blue)
+                                    .clipShape(Circle())
+                                
+                                Text("").font(.system(size: 10))
+                            } else {
+                                // Tanggal Biasa
+                                Text("\(date)")
+                                    .font(.system(size: 16, weight: .medium, design: .rounded))
+                                    .foregroundColor(Theme.textDark)
+                                    .frame(width: 34, height: 34)
+                                
+                                Text("").font(.system(size: 10)) // Ruang kosong agar sejajar
+                            }
                         }
                     }
                 }
