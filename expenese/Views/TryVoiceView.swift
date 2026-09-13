@@ -19,26 +19,13 @@ struct TryVoiceView: View {
     @State private var draftPayload: DraftPayload?
     
     var body: some View {
-        VStack(spacing: 60) {
+        VStack(spacing: 0) {
+            Text("Your **Expenses**")
+                .font(.system(size: 32))
+                .foregroundColor(.black)
+                .padding(.top, 80)
             
             Spacer()
-            VStack(spacing: 8) {
-                if isRecording {
-                    Text(speechRecognizer.transcript.isEmpty ? "Listening..." : speechRecognizer.transcript)
-                        .font(.system(size: 24, weight: .medium))
-                        .foregroundColor(.gray)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal)
-                        .frame(height: 80)
-                } else {
-                    Text("Tell Me **Your**")
-                        .font(.system(size: 32))
-                    Text("**Expense** or **Income !**")
-                        .font(.system(size: 32))
-                }
-            }
-            .multilineTextAlignment(.center)
-            .foregroundColor(.black)
             Button(action: {
                 withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) {
                     isRecording.toggle()
@@ -65,8 +52,9 @@ struct TryVoiceView: View {
                         .fill(Color.gray.opacity(0.6))
                         .frame(width: 180, height: 180)
                     if isRecording {
-                        AudioWaveformView(level: audioManager.level)
-                            .frame(width: 80, height: 60)
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.black)
+                            .frame(width: 60, height: 60)
                     } else {
                         Image(systemName: "mic.fill")
                             .font(.system(size: 60))
@@ -75,6 +63,24 @@ struct TryVoiceView: View {
                 }
             }
             .buttonStyle(PlainButtonStyle())
+            
+            Spacer()
+            
+            if isRecording {
+                Text("\"\(speechRecognizer.transcript.isEmpty ? "Listening..." : speechRecognizer.transcript)\"")
+                    .font(.system(size: 22, weight: .regular).italic())
+                    .foregroundColor(Color(hex: "3A3A3C"))
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 32)
+                    .frame(height: 80)
+            } else {
+                Text("\"Tap the mic to add expense\"")
+                    .font(.system(size: 22, weight: .regular).italic())
+                    .foregroundColor(.gray)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 32)
+                    .frame(height: 80)
+            }
             
             Spacer()
             
@@ -90,8 +96,7 @@ struct TryVoiceView: View {
                     .clipShape(Capsule())
                     .shadow(color: Color.blue.opacity(0.3), radius: 10, x: 0, y: 5)
             }
-            
-            Spacer()
+            .padding(.bottom, 40)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.white)
