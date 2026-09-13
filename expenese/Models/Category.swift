@@ -159,4 +159,29 @@ enum CategoryStore {
         let existing = (try? context.fetch(FetchDescriptor<Category>())) ?? []
         return CategoryCatalog.find(trimmed, in: existing)
     }
+
+    static func update(
+        _ category: Category,
+        name: String,
+        icon: String,
+        colorHex: String,
+        in context: ModelContext
+    ) {
+        let oldName = category.name
+        category.name = name
+        category.icon = icon
+        category.colorHex = colorHex
+
+        guard oldName.localizedCaseInsensitiveCompare(name) != .orderedSame else { return }
+
+        let expenses = (try? context.fetch(FetchDescriptor<Expense>())) ?? []
+        for expense in expenses {
+            let matchesStoredName = expense.category.localizedCaseInsensitiveCompare(oldName) == .orderedSame
+            let matchesDisplayName = CategoryCatalog.displayName(for: expense.category)
+                .localizedCaseInsensitiveCompare(oldName) == .orderedSame
+            if matchesStoredName || matchesDisplayName {
+                expense.category = name
+            }
+        }
+    }
 }

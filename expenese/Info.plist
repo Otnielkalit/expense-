@@ -35,10 +35,10 @@
 	<true/>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Expense needs microphone access to record and transcribe your spoken expenses.</string>
-	<key>NSSpeechRecognitionUsageDescription</key>
-	<string>Expense needs speech recognition to automatically parse your spoken expenses into records.</string>
 	<key>NSSiriUsageDescription</key>
 	<string>Expense uses Siri to help you log your expenses quickly with your voice.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Expense needs speech recognition to automatically parse your spoken expenses into records.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

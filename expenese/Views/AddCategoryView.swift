@@ -12,12 +12,25 @@ struct AddCategoryView: View {
     @Environment(\.dismiss) var dismiss
     @Environment(\.modelContext) private var context
 
-    @State private var categoryName: String = ""
-    @State private var selectedIcon: String = "cart.fill"
-    @State private var selectedColorHex: String = "007AFF"
+    private let categoryToEdit: Category?
+    var onCreated: ((Category) -> Void)? = nil
+
+    @State private var categoryName: String
+    @State private var selectedIcon: String
+    @State private var selectedColorHex: String
     @State private var errorMessage: String?
 
-    var onCreated: ((Category) -> Void)? = nil
+    init(category: Category? = nil, onCreated: ((Category) -> Void)? = nil) {
+        self.categoryToEdit = category
+        self.onCreated = onCreated
+        _categoryName = State(initialValue: category?.name ?? "")
+        _selectedIcon = State(initialValue: category?.icon ?? "cart.fill")
+        _selectedColorHex = State(initialValue: category?.colorHex ?? "007AFF")
+    }
+
+    private var isEditing: Bool {
+        categoryToEdit != nil
+    }
 
     private var selectedColor: Color {
         Color(hex: selectedColorHex)
@@ -25,6 +38,22 @@ struct AddCategoryView: View {
 
     private var trimmedName: String {
         categoryName.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var iconOptions: [String] {
+        var icons = CategoryCatalog.icons
+        if !icons.contains(selectedIcon) {
+            icons.insert(selectedIcon, at: 0)
+        }
+        return icons
+    }
+
+    private var colorOptions: [(hex: String, color: Color)] {
+        var items = CategoryCatalog.colors
+        if !items.contains(where: { $0.hex.caseInsensitiveCompare(selectedColorHex) == .orderedSame }) {
+            items.insert((selectedColorHex, Color(hex: selectedColorHex)), at: 0)
+        }
+        return items
     }
 
     var body: some View {
@@ -39,7 +68,7 @@ struct AddCategoryView: View {
                     saveButton
                 }
             }
-            .navigationTitle("New Category")
+            .navigationTitle(isEditing ? "Edit Category" : "New Category")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
@@ -94,7 +123,7 @@ struct AddCategoryView: View {
 
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 16) {
-                        ForEach(CategoryCatalog.icons, id: \.self) { icon in
+                        ForEach(iconOptions, id: \.self) { icon in
                             Button(action: { selectedIcon = icon }) {
                                 Image(systemName: icon)
                                     .font(.system(size: 24))
@@ -116,7 +145,7 @@ struct AddCategoryView: View {
 
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 16) {
-                        ForEach(CategoryCatalog.colors, id: \.hex) { item in
+                        ForEach(colorOptions, id: \.hex) { item in
                             Button(action: { selectedColorHex = item.hex }) {
                                 Circle()
                                     .fill(item.color)
@@ -141,7 +170,7 @@ struct AddCategoryView: View {
 
     private var saveButton: some View {
         Button(action: saveCategory) {
-            Text("Save Category")
+            Text(isEditing ? "Save Changes" : "Save Category")
                 .font(.system(size: 18, weight: .bold))
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity)
@@ -157,8 +186,23 @@ struct AddCategoryView: View {
     private func saveCategory() {
         guard !trimmedName.isEmpty else { return }
 
-        if CategoryStore.categoryNamed(trimmedName, in: context) != nil {
+        if let existing = CategoryStore.categoryNamed(trimmedName, in: context),
+           existing.persistentModelID != categoryToEdit?.persistentModelID {
             errorMessage = "A category named \"\(trimmedName)\" already exists."
+            return
+        }
+
+        if let category = categoryToEdit {
+            CategoryStore.update(
+                category,
+                name: trimmedName,
+                icon: selectedIcon,
+                colorHex: selectedColorHex,
+                in: context
+            )
+            try? context.save()
+            onCreated?(category)
+            dismiss()
             return
         }
 
@@ -183,8 +227,13 @@ extension View {
     ) -> some View {
         sheet(isPresented: isPresented) {
             AddCategoryView(onCreated: onCreated)
-                .presentationDetents([.medium, .large])
-                .presentationDragIndicator(.visible)
+                .categoryFormSheetStyle()
         }
+    }
+
+    func categoryFormSheetStyle() -> some View {
+        self
+            .presentationDetents([.large])
+            .presentationDragIndicator(.visible)
     }
 }

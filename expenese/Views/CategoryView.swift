@@ -11,7 +11,8 @@ import SwiftUI
 struct CategoryView: View {
     @Environment(\.dismiss) private var dismiss
     @Query(sort: \Category.sortOrder) private var categories: [Category]
-    @State private var showAddCategory = false
+    @State private var showCategoryForm = false
+    @State private var categoryToEdit: Category?
 
     private let chipBackground = Color(red: 0.94, green: 0.94, blue: 0.97)
     private let addButtonBlue = Color(red: 0.13, green: 0.55, blue: 1.0)
@@ -44,7 +45,10 @@ struct CategoryView: View {
         .navigationTitle(Text("Category"))
         .navigationBarTitleDisplayMode(.inline)
         
-        .addCategorySheet(isPresented: $showAddCategory)
+        .sheet(isPresented: $showCategoryForm, onDismiss: { categoryToEdit = nil }) {
+            AddCategoryView(category: categoryToEdit)
+                .categoryFormSheetStyle()
+        }
     }
 
     private var header: some View {
@@ -77,7 +81,8 @@ struct CategoryView: View {
 
     private var addButton: some View {
         Button {
-            showAddCategory = true
+            categoryToEdit = nil
+            showCategoryForm = true
         } label: {
             Text("+ Add Category")
                 .font(.system(size: 16, weight: .semibold))
@@ -93,24 +98,30 @@ struct CategoryView: View {
     }
 
     private func categoryChip(_ category: Category) -> some View {
-        HStack(spacing: 8) {
-            Image(systemName: category.icon)
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundColor(.white)
-                .frame(width: 28, height: 28)
-                .background(category.color)
-                .clipShape(Circle())
+        Button {
+            categoryToEdit = category
+            showCategoryForm = true
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: category.icon)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(.white)
+                    .frame(width: 28, height: 28)
+                    .background(category.color)
+                    .clipShape(Circle())
 
-            Text(category.name)
-                .font(.system(size: 14, weight: .medium))
-                .foregroundColor(Theme.textDark)
-                .lineLimit(1)
+                Text(category.name)
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(Theme.textDark)
+                    .lineLimit(1)
+            }
+            .padding(.leading, 6)
+            .padding(.trailing, 14)
+            .padding(.vertical, 6)
+            .background(chipBackground)
+            .clipShape(Capsule())
         }
-        .padding(.leading, 6)
-        .padding(.trailing, 14)
-        .padding(.vertical, 6)
-        .background(chipBackground)
-        .clipShape(Capsule())
+        .buttonStyle(.plain)
     }
 }
 

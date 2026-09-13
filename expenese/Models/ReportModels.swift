@@ -42,6 +42,17 @@ struct ReportWeek: Identifiable, Hashable {
     }
 }
 
+struct ReportWeekGroup: Identifiable {
+    let monthStart: Date
+    let weeks: [ReportWeek]
+
+    var id: Date { monthStart }
+
+    var title: String {
+        ReportFormat.month(monthStart)
+    }
+}
+
 enum ReportFormat {
     static func rupiah(_ amount: Double) -> String {
         if amount >= 1_000 {
@@ -166,6 +177,45 @@ enum ReportHelper {
         })
         let sorted = months.sorted()
         return sorted.isEmpty ? [calendar.date(from: calendar.dateComponents([.year, .month], from: Date()))!] : sorted
+    }
+
+    /// Consecutive weeks from the earliest expense (or the start of the current month)
+    /// through today / the latest expense, so the report dropdown can move past month boundaries.
+    static func availableWeeks(from expenses: [Expense]) -> [ReportWeek] {
+        let now = Date()
+        let expenseDates = expenses.map(\.date)
+        let startBound = expenseDates.min()
+            ?? calendar.date(from: calendar.dateComponents([.year, .month], from: now))
+            ?? now
+        let endBound = max(expenseDates.max() ?? now, now)
+
+        var weekStart = startOfWeek(for: startBound)
+        let lastWeekStart = startOfWeek(for: endBound)
+        var result: [ReportWeek] = []
+
+        while weekStart <= lastWeekStart {
+            let weekEnd = calendar.date(byAdding: .day, value: 6, to: weekStart) ?? weekStart
+            result.append(ReportWeek(start: weekStart, end: weekEnd))
+            guard let next = calendar.date(byAdding: .day, value: 7, to: weekStart), next > weekStart else {
+                break
+            }
+            weekStart = next
+        }
+
+        return result
+    }
+
+    static func availableWeekGroups(from expenses: [Expense]) -> [ReportWeekGroup] {
+        let grouped = Dictionary(grouping: availableWeeks(from: expenses)) { week in
+            calendar.date(from: calendar.dateComponents([.year, .month], from: week.start)) ?? week.start
+        }
+
+        return grouped.keys.sorted().map { monthStart in
+            ReportWeekGroup(
+                monthStart: monthStart,
+                weeks: (grouped[monthStart] ?? []).sorted { $0.start < $1.start }
+            )
+        }
     }
 
     static func week(containing date: Date) -> ReportWeek {
